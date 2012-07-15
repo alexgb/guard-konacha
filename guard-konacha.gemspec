@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'guard',   '~> 1.1'
   s.add_dependency 'konacha', '~> 1.4'
 
-  s.files        = Dir.glob('{lib}/**/*') + %w[LICENSE README.md]
+  s.files        = Dir.glob('{lib}/**/*') + %w[LICENSE Readme.md]
   s.require_path = 'lib'
 
   s.rdoc_options = ["--charset=UTF-8", "--main=README.md", "--exclude='lib|Gemfile'"]
