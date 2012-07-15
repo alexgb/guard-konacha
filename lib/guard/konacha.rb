@@ -6,7 +6,7 @@ module Guard
 
     def initialize(watchers=[], options={})
       super
-      @spec_dir = 'spec/javascripts'
+      @spec_dir = options[:spec_dir] || 'spec/javascripts'
     end
 
     def start
