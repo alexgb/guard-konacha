@@ -1,4 +1,4 @@
-# Guard::Bundler
+# Guard::Konacha
 
 Automatically run your [Konacha](https://github.com/jfirebaugh/konacha) tests through [Guard](https://github.com/guard/guard/).
 
