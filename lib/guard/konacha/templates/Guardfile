@@ -1,0 +1,6 @@
+### Guard::Konacha
+#  available options:
+#  - :spec_dir
+guard :konacha do
+  watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)})
+end
