@@ -4,37 +4,36 @@ require 'guard/guard'
 module Guard
   class Konacha < Guard
 
+    autoload :Runner, 'guard/konacha/runner'
+    attr_accessor :runner
+
     def initialize(watchers=[], options={})
       super
-      @spec_dir = options[:spec_dir] || 'spec/javascripts'
+      @runner = Runner.new(options)
     end
 
     def start
-      run_all
+      runner.kill_konacha
+      runner.launch_konacha("Start")
+    end
+
+    def reload
+      runner.kill_konacha
+      runner.launch_konacha("Reload")
     end
 
     def run_all
-      run_konacha
+      runner.run_all
     end
 
     def run_on_changes(paths)
-      run_konacha(paths)
+      runner.run(paths)
     end
+    # for guard 1.0.x and earlier
+    alias :run_on_change :run_on_changes
 
-    def run_konacha(paths=[])
-      files = paths.map { |p| p.to_s.sub(%r{^#{@spec_dir}/}, '').sub(/(.js\.coffee|\.js|\.coffee)/, '') }
-      option = files.empty? ? '' : "SPEC=#{files.join(',')}"
-      cmd = "bundle exec rake konacha:run #{option}"
-
-      ::Guard::UI.info "Konacha: #{cmd}"
-      result = `bundle exec rake konacha:run #{option}`
-
-      last_line = result.split("\n").last
-      examples, failures = last_line.scan(/\d/).map { |s| s.to_i }
-      image = failures > 0 ? :failed : :success
-
-      ::Guard::UI.info result
-      ::Guard::Notifier.notify(last_line, :title => 'Konacha Specs', :image => image )
+    def stop
+      runner.kill_konacha
     end
 
   end
