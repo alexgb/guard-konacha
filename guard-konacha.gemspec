@@ -1,6 +1,10 @@
+# -*- encoding: utf-8 -*-
+$:.push File.expand_path('../lib', __FILE__)
+require 'guard/konacha/version'
+
 Gem::Specification.new do |s|
   s.name        = 'guard-konacha'
-  s.version     = '0.1.0'
+  s.version     = Guard::KonachaVersion::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ['Alex Gibbons']
   s.email       = ['alex.gibbons@gmail.com']
