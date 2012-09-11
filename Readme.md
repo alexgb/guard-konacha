@@ -31,3 +31,7 @@ If your specs live outside of `spec/javascripts` then tell Konacha where to find
 ## Development
 
 This is a work in progress and could use some help.
+
+## Contributors
+
+[https://github.com/guard/guard/contributors](https://github.com/alexgb/guard-konacha/graphs/contributors)
