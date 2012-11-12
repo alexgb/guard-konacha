@@ -34,4 +34,4 @@ This is a work in progress and could use some help.
 
 ## Contributors
 
-[https://github.com/guard/guard/contributors](https://github.com/alexgb/guard-konacha/graphs/contributors)
+[https://github.com/alexgb/guard-konacha/graphs/contributors](https://github.com/alexgb/guard-konacha/graphs/contributors)
