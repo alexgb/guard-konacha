@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.description = 'Automatically run konacha tests'
 
   s.add_dependency 'guard',   '~> 1.1'
-  s.add_dependency 'konacha', '~> 1.4'
+  s.add_dependency 'konacha', '~> 2.0'
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'simplecov'
