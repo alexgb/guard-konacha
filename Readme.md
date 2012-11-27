@@ -17,7 +17,7 @@ Or add to your Gemfile:
 Add guard definitions to your `Guardfile`
 
     guard :konacha do
-      watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)})
+      watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)$})
     end
 
 ## Configure

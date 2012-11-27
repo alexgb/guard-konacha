@@ -3,5 +3,5 @@
 #  - :spec_dir
 guard :konacha do
   watch(%r{^app/assets/javascripts/(.*)\.js(\.coffee)?$}) { |m| "#{m[1]}_spec.js" }
-  watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)})
+  watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)$})
 end
