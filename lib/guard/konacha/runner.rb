@@ -1,3 +1,5 @@
+require 'childprocess'
+
 module Guard
   class Konacha
     class Runner
@@ -18,27 +20,19 @@ module Guard
 
       def launch_konacha(action)
         UI.info "#{action}ing Konacha", :reset => true
-        spawn_konacha(spawn_konacha_command)
+        spawn_konacha
       end
 
       def kill_konacha
-        return unless @konacha_pid
-
-        Process.kill(:INT, @konacha_pid)
-
-        begin
-          unless Process.waitpid(@konacha_pid, Process::WNOHANG)
-            Process.kill(:KILL, @konacha_pid)
-          end
-        rescue Errno::ECHILD
+        if @process
+          @process.stop(5) 
+          UI.info "Konacha Stopped", :reset => true
         end
-        UI.info "Konacha Stopped", :reset => true
       end
 
       def run(paths=[])
         UI.info "Konacha Running: #{paths.join(' ')}"
         result = run_command(konacha_command(paths))
-        UI.info "Konacha Results: #{result}"
 
         if @options[:notification]
           last_line = result.split("\n").last
@@ -55,8 +49,9 @@ module Guard
 
       private
 
-      def run_command(command)
-        `#{command}`
+      def run_command(cmd)
+        puts result = `#{cmd}`
+        result
       end
 
       def spawn_konacha_command
@@ -78,10 +73,10 @@ module Guard
         cmd_parts.join(' ').strip
       end
 
-      def spawn_konacha(cmd)
-        @konacha_pid = fork do
-          exec "#{spawn_konacha_command}"
-        end
+      def spawn_konacha
+        @process = ChildProcess.build(spawn_konacha_command)
+        @process.io.inherit! if ::Guard.respond_to?(:options) && ::Guard.options && ::Guard.options[:verbose]
+        @process.start
       end
 
       def bundler?

@@ -35,36 +35,6 @@ describe Guard::Konacha::Runner do
       Process.should_not_receive(:kill)
       subject.kill_konacha
     end
-
-    it "calls Process#kill with 'INT, pid'" do
-      subject.should_receive(:fork).and_return(123)
-      subject.send(:spawn_konacha, 'foo')
-
-      Process.should_receive(:kill).with(:INT, 123)
-      Process.should_receive(:waitpid).with(123, Process::WNOHANG).and_return(123)
-      Process.should_not_receive(:kill).with(:KILL, 123)
-      subject.kill_konacha
-    end
-
-    it "calls Process#kill with 'KILL, pid' if Process.waitpid returns nil" do
-      subject.should_receive(:fork).and_return(123)
-      subject.send(:spawn_konacha, 'foo')
-
-      Process.should_receive(:kill).with(:INT, 123)
-      Process.should_receive(:waitpid).with(123, Process::WNOHANG).and_return(nil)
-      Process.should_receive(:kill).with(:KILL, 123)
-      subject.kill_konacha
-    end
-
-    it 'calls rescue when Process.waitpid raises Errno::ECHILD' do
-      subject.should_receive(:fork).and_return(123)
-      subject.send(:spawn_konacha, 'foo')
-
-      Process.should_receive(:kill).with(:INT, 123)
-      Process.should_receive(:waitpid).with(123, Process::WNOHANG).and_raise(Errno::ECHILD)
-      Process.should_not_receive(:kill).with(:KILL, 123)
-      subject.kill_konacha
-    end
   end
 
   describe '.run' do
@@ -106,15 +76,6 @@ describe Guard::Konacha::Runner do
         runner.should_not_receive(:run)
         runner.run_all
       end
-    end
-  end
-
-  describe '.spawn_konacha' do
-    it 'starts a Konacha::Server' do
-      runner.should_receive(:exec).with('bundle exec rake konacha:serve').and_return
-      runner.stub(:fork).and_yield
-
-      runner.send(:spawn_konacha, 'bundle exec rake konacha:serve')
     end
   end
 
