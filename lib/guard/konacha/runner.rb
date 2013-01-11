@@ -36,7 +36,7 @@ module Guard
 
         if @options[:notification]
           last_line = result.split("\n").last
-          examples, failures = last_line.scan(/\d/).map { |s| s.to_i }
+          examples, failures = last_line.scan(/\d+/).map { |s| s.to_i }
           image = failures > 0 ? :failed : :success
           ::Guard::Notifier.notify(last_line, :title => 'Konacha Specs', :image => image )
         end
