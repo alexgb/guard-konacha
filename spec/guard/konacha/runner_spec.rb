@@ -86,7 +86,7 @@ describe Guard::Konacha::Runner do
       let(:path) { '/model/user_spec' }
       let(:file_path) { 'spec/javascripts/model/user_spec.js.coffee' }
 
-      it 'runs all the tests' do
+      it 'runs specific tests' do
         subject.should_receive(:run_tests).with(konacha_url).and_return passing_result
         ::Guard::UI.should_receive(:info).with("Konacha Running: #{file_path}")
         subject.run [file_path]
