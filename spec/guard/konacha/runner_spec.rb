@@ -38,27 +38,106 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.run' do
-    context 'with Bundler' do
-      before do
-        subject.should_receive(:bundler?).and_return(true)
-      end
+    let(:host) { 'localhost' }
+    let(:port) { 3500 }
+    let(:konacha_url) { "http://#{host}:#{port}#{path}?mode=runner" }
 
-      it 'pushes path to konacha' do
-        subject.should_receive(:run_command).with('bundle exec rake konacha:run').and_return(konacha_response)
+    let(:failing_result) do
+      {
+        :examples => 3,
+        :failures => 3,
+        :pending  => 0,
+        :duration => 2.5056
+      }
+    end
+
+    let(:passing_result) do
+      {
+        :examples => 2,
+        :failures => 0,
+        :pending  => 0,
+        :duration => 0.3056
+      }
+    end
+
+    let(:pending_result) do
+      {
+        :examples => 2,
+        :failures => 0,
+        :pending  => 2,
+        :duration => 2.8
+      }
+    end
+
+    context 'without arguments' do
+      let(:path) { '/' }
+      let(:port) { 4000 }
+      let(:host) { 'other_host' }
+      subject { described_class.new :host => host, :port => port }
+
+      it 'runs all the tests' do
+        subject.should_receive(:run_tests).with(konacha_url).and_return passing_result
+        ::Guard::UI.should_receive(:info).with('Konacha Running: All tests')
         subject.run
       end
     end
 
-    context 'without Bundler' do
-      before do
-        subject.should_receive(:bundler?).and_return(false)
-      end
+    context 'with arguments' do
+      let(:path) { '/model/user_spec' }
+      let(:file_path) { 'spec/javascripts/model/user_spec.js.coffee' }
 
-      it 'pushes path to spin' do
-        subject.should_receive(:run_command).with('rake konacha:run').and_return(konacha_response)
-        subject.run
+      it 'runs all the tests' do
+        subject.should_receive(:run_tests).with(konacha_url).and_return passing_result
+        ::Guard::UI.should_receive(:info).with("Konacha Running: #{file_path}")
+        subject.run [file_path]
       end
     end
+
+    it 'aggregates multiple test results' do
+      files = [
+        'spec/javascripts/model/user_spec.js.coffee',
+        'spec/javascripts/model/profile_spec.js.coffee'
+      ]
+      subject.should_receive(:run_tests).twice.and_return(passing_result, failing_result)
+      ::Guard::UI.should_receive(:info).with("Konacha Running: #{files.join(' ')}")
+      ::Guard::UI.should_receive(:info).with("5 examples, 3 failures\nin 2.81 seconds")
+      subject.run files
+    end
+
+    describe 'notifications' do
+      subject { described_class.new :notifications => true }
+
+      it 'sends text information to the Guard::Notifier' do
+        subject.should_receive(:run_tests).exactly(3).times.and_return(passing_result, pending_result, failing_result)
+        ::Guard::Notifier.should_receive(:notify).with(
+          "7 examples, 3 failures, 2 pending\nin 5.61 seconds",
+          :title => 'Konacha Specs',
+          :image => :failed
+        )
+        subject.run ['a', 'b', 'c']
+      end
+    end
+
+    describe 'Capybara session' do
+      let(:fake_session) { double('capybara session') }
+      let(:fake_reporter) do
+        double('konacha reporter',
+               :example_count => 5,
+               :failure_count => 2,
+               :pending_count => 1,
+               :duration => 0.3
+              )
+      end
+      let(:fake_runner) { double('konacha runner', :run => true, :reporter => fake_reporter) }
+
+      it 'can be configured to another driver' do
+        instance = described_class.new :driver => :other_driver
+        ::Capybara::Session.should_receive(:new).with(:other_driver).and_return(fake_session)
+        ::Konacha::Runner.should_receive(:new).with(fake_session).and_return(fake_runner)
+        instance.run
+      end
+    end
+
   end
 
   describe '.run_all' do

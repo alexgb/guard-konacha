@@ -1,4 +1,10 @@
 require 'childprocess'
+require 'capybara'
+require 'active_support/core_ext/module/delegation'
+require 'active_support/core_ext/object/blank'
+require 'konacha/reporter'
+require 'konacha/formatter'
+require 'konacha/runner'
 
 module Guard
   class Konacha
@@ -8,6 +14,9 @@ module Guard
         :bundler  => true,
         :spec_dir => 'spec/javascripts',
         :run_all  => true,
+        :driver   => :selenium,
+        :host     => 'localhost',
+        :port     => 3500,
         :notification => true
       }
 
@@ -25,21 +34,58 @@ module Guard
 
       def kill_konacha
         if @process
-          @process.stop(5) 
+          @process.stop(5)
           UI.info "Konacha Stopped", :reset => true
         end
       end
 
       def run(paths=[])
-        UI.info "Konacha Running: #{paths.join(' ')}"
-        result = run_command(konacha_command(paths))
+        UI.info "Konacha Running: #{paths.empty? ? 'All tests' : paths.join(' ')}"
+
+        urls = paths.map { |p| konacha_url(p) }
+        urls = [konacha_url] if paths.empty?
+
+        test_results = {
+          :examples => 0,
+          :failures => 0,
+          :pending  => 0,
+          :duration => 0
+        }
+
+        urls.each do |url|
+          individual_result = run_tests(url)
+
+          test_results[:examples] += individual_result[:examples]
+          test_results[:failures] += individual_result[:failures]
+          test_results[:pending]  += individual_result[:pending]
+          test_results[:duration] += individual_result[:duration]
+        end
+
+
+        result_line = "#{test_results[:examples]} examples, #{test_results[:failures]} failures"
+        result_line << ", #{test_results[:pending]} pending" if test_results[:pending] > 0
+        text = [
+          result_line,
+          "in #{"%.2f" % test_results[:duration]} seconds"
+        ].join "\n"
+
+        UI.info text if urls.length > 1
 
         if @options[:notification]
-          last_line = result.split("\n").last
-          examples, failures = last_line.scan(/\d+/).map { |s| s.to_i }
-          image = failures > 0 ? :failed : :success
-          ::Guard::Notifier.notify(last_line, :title => 'Konacha Specs', :image => image )
+          image = test_results[:failures] > 0 ? :failed : :success
+          ::Guard::Notifier.notify(text, :title => 'Konacha Specs', :image => image )
         end
+      end
+
+      def run_tests(url)
+        runner = ::Konacha::Runner.new session
+        runner.run url
+        return {
+          :examples => runner.reporter.example_count,
+          :failures => runner.reporter.failure_count,
+          :pending  => runner.reporter.pending_count,
+          :duration => runner.reporter.duration
+        }
       end
 
       def run_all
@@ -49,9 +95,15 @@ module Guard
 
       private
 
-      def run_command(cmd)
-        puts result = `#{cmd}`
-        result
+      def konacha_url(path = nil)
+        url_path = nil
+        url_path = path.gsub(/^#{@options[:spec_dir]}/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
+        "http://#{@options[:host]}:#{@options[:port]}#{url_path || '/'}?mode=runner"
+      end
+
+      def session
+        UI.info "Starting Konacha-Capybara session using #{@options[:driver]} driver, this can take a few seconds..." if @session.nil?
+        @session ||= Capybara::Session.new @options[:driver]
       end
 
       def spawn_konacha_command
@@ -59,18 +111,6 @@ module Guard
         cmd_parts << "bundle exec" if bundler?
         cmd_parts << "rake konacha:serve"
         cmd_parts.join(' ')
-      end
-
-      def konacha_command(paths)
-        files = []
-        files = paths.map { |p| p.to_s.sub(%r{^#{@options[:spec_dir]}/}, '').sub(/(.js\.coffee|\.js|\.coffee)/, '') }
-        option = files.empty? ? '' : "SPEC=#{files.join(',')}"
-
-        cmd_parts = []
-        cmd_parts << "bundle exec" if bundler?
-        cmd_parts << "rake konacha:run"
-        cmd_parts << option
-        cmd_parts.join(' ').strip
       end
 
       def spawn_konacha
