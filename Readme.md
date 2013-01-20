@@ -28,7 +28,7 @@ If your specs live outside of `spec/javascripts` then tell Konacha where to find
       # ...
     end
 
-It you want to use capybara-webkit instead of the default selenium
+If you want to use capybara-webkit instead of the default selenium
 driver:
 
     require 'capybara-webkit'
@@ -39,7 +39,6 @@ driver:
 
 If you are running konacha:serve on a different host or port than the
 default `localhost` and `3500`, the configuration settings `:host` and `:port` will help you there.
-
 
 ## Development
 
