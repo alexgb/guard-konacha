@@ -96,9 +96,8 @@ module Guard
       private
 
       def konacha_url(path = nil)
-        url_path = nil
-        url_path = path.gsub(/^#{@options[:spec_dir]}/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
-        "http://#{@options[:host]}:#{@options[:port]}#{url_path || '/'}?mode=runner"
+        url_path = path.gsub(/^#{@options[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
+        "http://#{@options[:host]}:#{@options[:port]}/#{url_path}?mode=runner"
       end
 
       def session
