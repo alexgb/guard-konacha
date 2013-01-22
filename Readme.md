@@ -1,4 +1,4 @@
-# Guard::Konacha
+# Guard::Konacha [![Build Status](https://travis-ci.org/alexgb/guard-konacha.png)](https://travis-ci.org/alexgb/guard-konacha)
 
 Automatically run your [Konacha](https://github.com/jfirebaugh/konacha) tests through [Guard](https://github.com/guard/guard/).
 
