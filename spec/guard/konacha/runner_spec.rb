@@ -4,6 +4,10 @@ describe Guard::Konacha::Runner do
   let(:konacha_response) { "Finished in 6 seconds\n5 examples, 0 failures, 0 pending" }
   let(:runner) { Guard::Konacha::Runner.new }
 
+  before(:each) do
+    subject.stub(:konacha_running?) { true }
+  end
+
   describe '#initialize' do
     subject { runner.options }
 
@@ -129,12 +133,12 @@ describe Guard::Konacha::Runner do
               )
       end
       let(:fake_runner) { double('konacha runner', :run => true, :reporter => fake_reporter) }
+      subject { described_class.new :driver => :other_driver }
 
       it 'can be configured to another driver' do
-        instance = described_class.new :driver => :other_driver
         ::Capybara::Session.should_receive(:new).with(:other_driver).and_return(fake_session)
         ::Konacha::Runner.should_receive(:new).with(fake_session).and_return(fake_runner)
-        instance.run
+        subject.run
       end
     end
 

@@ -1,3 +1,4 @@
+require 'net/http'
 require 'childprocess'
 require 'capybara'
 require 'active_support/core_ext/module/delegation'
@@ -40,6 +41,8 @@ module Guard
       end
 
       def run(paths=[])
+        return UI.info("Konacha server not running") unless konacha_running?
+
         UI.info "Konacha Running: #{paths.empty? ? 'All tests' : paths.join(' ')}"
 
         urls = paths.map { |p| konacha_url(p) }
@@ -97,7 +100,7 @@ module Guard
 
       def konacha_url(path = nil)
         url_path = path.gsub(/^#{@options[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
-        "http://#{@options[:host]}:#{@options[:port]}/#{url_path}?mode=runner"
+        "#{konacha_base_url}/#{url_path}?mode=runner"
       end
 
       def session
@@ -113,9 +116,20 @@ module Guard
       end
 
       def spawn_konacha
-        @process = ChildProcess.build(spawn_konacha_command)
-        @process.io.inherit! if ::Guard.respond_to?(:options) && ::Guard.options && ::Guard.options[:verbose]
-        @process.start
+        unless @process
+          @process = ChildProcess.build(spawn_konacha_command)
+          @process.io.inherit! if ::Guard.respond_to?(:options) && ::Guard.options && ::Guard.options[:verbose]
+          @process.start
+        end
+      end
+
+      def konacha_base_url
+        "http://#{@options[:host]}:#{@options[:port]}"
+      end
+
+      def konacha_running?
+        Net::HTTP.get_response(URI.parse(konacha_base_url))
+      rescue Errno::ECONNREFUSED
       end
 
       def bundler?
