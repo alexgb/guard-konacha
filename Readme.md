@@ -17,6 +17,7 @@ Or add to your Gemfile:
 Add guard definitions to your `Guardfile`
 
     guard :konacha do
+      watch(%r{^app/assets/javascripts/(.*)\.js(\.coffee)?$}) { |m| "#{m[1]}_spec.js" }
       watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)$})
     end
 
