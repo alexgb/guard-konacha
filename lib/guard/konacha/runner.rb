@@ -55,8 +55,8 @@ module Guard
           :duration => 0
         }
 
-        urls.each do |url|
-          individual_result = run_tests(url)
+        urls.each_with_index do |url, index|
+          individual_result = run_tests(url, paths[index])
 
           test_results[:examples] += individual_result[:examples]
           test_results[:failures] += individual_result[:failures]
@@ -79,7 +79,21 @@ module Guard
         end
       end
 
-      def run_tests(url)
+      EMPTY_RESULT = {
+        :examples => 0,
+        :failures => 0,
+        :pending  => 0,
+        :duration => 0,
+      }
+
+      def run_tests(url, path)
+        session.visit url
+
+        if session.status_code == 404
+          UI.warning "No Spec found for #{path}"
+          return EMPTY_RESULT
+        end
+
         runner = ::Konacha::Runner.new session
         runner.run url
         return {
@@ -89,9 +103,8 @@ module Guard
           :duration => runner.reporter.duration
         }
       rescue => e
-        puts e.inspect
+        UI.error e.inspect
         @session = nil
-        #retry
       end
 
       def run_all
