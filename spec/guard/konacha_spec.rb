@@ -3,6 +3,11 @@ require 'spec_helper'
 describe Guard::Konacha do
   subject { Guard::Konacha.new }
 
+  before do
+    # Silence UI.info output
+    ::Guard::UI.stub :info => true
+  end
+
   describe '#initialize' do
     it "instantiates Runner with given options" do
       Guard::Konacha::Runner.should_receive(:new).with(:spec_dir => 'spec/assets')

@@ -1,10 +1,13 @@
 require 'spec_helper'
 
 describe Guard::Konacha::Runner do
-  let(:konacha_response) { "Finished in 6 seconds\n5 examples, 0 failures, 0 pending" }
+
   let(:runner) { Guard::Konacha::Runner.new }
 
-  before(:each) do
+  before do
+    # Silence Ui.info output
+    ::Guard::UI.stub :info => true
+
     subject.stub(:konacha_running?) { true }
   end
 
@@ -80,7 +83,7 @@ describe Guard::Konacha::Runner do
       subject { described_class.new :host => host, :port => port }
 
       it 'runs all the tests' do
-        subject.should_receive(:run_tests).with(konacha_url).and_return passing_result
+        subject.should_receive(:run_tests).with(konacha_url, nil).and_return passing_result
         ::Guard::UI.should_receive(:info).with('Konacha Running: All tests')
         subject.run
       end
@@ -91,7 +94,7 @@ describe Guard::Konacha::Runner do
       let(:file_path) { 'spec/javascripts/model/user_spec.js.coffee' }
 
       it 'runs specific tests' do
-        subject.should_receive(:run_tests).with(konacha_url).and_return passing_result
+        subject.should_receive(:run_tests).with(konacha_url, file_path).and_return passing_result
         ::Guard::UI.should_receive(:info).with("Konacha Running: #{file_path}")
         subject.run [file_path]
       end
@@ -123,7 +126,7 @@ describe Guard::Konacha::Runner do
     end
 
     describe 'Capybara session' do
-      let(:fake_session) { double('capybara session') }
+      let(:fake_session) { double('capybara session', :visit => true, :status_code => 200) }
       let(:fake_reporter) do
         double('konacha reporter',
                :example_count => 5,
@@ -141,7 +144,6 @@ describe Guard::Konacha::Runner do
         subject.run
       end
     end
-
   end
 
   describe '.run_all' do
@@ -158,6 +160,47 @@ describe Guard::Konacha::Runner do
       it 'not run all specs' do
         runner.should_not_receive(:run)
         runner.run_all
+      end
+    end
+  end
+
+  describe '.run_tests' do
+    let(:status_code) { 200 }
+    let(:capybara_session) { double('capybara session', :status_code => status_code, :visit => true) }
+    before do
+      subject.stub :session => capybara_session
+    end
+
+    context 'with missing spec' do
+      let(:status_code) { 404 }
+      let(:missing_spec) { 'models/missing_spec' }
+
+      it 'aborts the test with a missing result' do
+        ::Guard::UI.should_receive(:warning).with("No spec found for: #{missing_spec}")
+        ::Konacha::Runner.should_receive(:new).never
+        subject.run_tests('dummy url', missing_spec).should eql described_class::EMPTY_RESULT
+      end
+    end
+
+    context 'with runner raising exception' do
+      before do
+        subject.instance_variable_set(:@session, 'dummy')
+        subject.stub :session => double('capybara session', :status_code => 200, :visit => true)
+        ::Guard::UI.stub :error => true
+      end
+
+      it 'resets the session' do
+        ::Konacha::Runner.should_receive(:new) { throw :error }
+        expect { subject.run_tests('dummy url', nil) }.to change { subject.instance_variable_get(:@session) }.from('dummy').to(nil)
+      end
+
+      it 'outputs the error to Guard' do
+        ::Guard::UI.should_receive(:error) do |arg|
+          arg.should match(/something_relevant/)
+        end
+        ::Konacha::Runner.should_receive(:new) { throw :something_relevant }
+
+        subject.run_tests('dummy url', nil)
       end
     end
   end
