@@ -64,7 +64,6 @@ module Guard
           test_results[:duration] += individual_result[:duration]
         end
 
-
         result_line = "#{test_results[:examples]} examples, #{test_results[:failures]} failures"
         result_line << ", #{test_results[:pending]} pending" if test_results[:pending] > 0
         text = [
@@ -89,6 +88,10 @@ module Guard
           :pending  => runner.reporter.pending_count,
           :duration => runner.reporter.duration
         }
+      rescue => e
+        puts e.inspect
+        @session = nil
+        #retry
       end
 
       def run_all
