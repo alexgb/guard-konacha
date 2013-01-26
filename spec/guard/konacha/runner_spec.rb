@@ -195,8 +195,10 @@ describe Guard::Konacha::Runner do
       end
 
       it 'outputs the error to Guard' do
-        ::Guard::UI.should_receive(:error).with '#<ArgumentError: uncaught throw :error>'
-        ::Konacha::Runner.should_receive(:new) { throw :error }
+        ::Guard::UI.should_receive(:error) do |arg|
+          arg.should match(/something_relevant/)
+        end
+        ::Konacha::Runner.should_receive(:new) { throw :something_relevant }
 
         subject.run_tests('dummy url', nil)
       end
