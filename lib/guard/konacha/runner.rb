@@ -90,7 +90,7 @@ module Guard
         session.visit url
 
         if session.status_code == 404
-          UI.warning "No Spec found for #{path}"
+          UI.warning "No spec found for: #{path}"
           return EMPTY_RESULT
         end
 
