@@ -8,6 +8,7 @@ unless ENV['CI']
 end
 
 require 'rspec'
+require 'timecop'
 require 'guard/konacha'
 
 ENV["GUARD_ENV"] = 'test'

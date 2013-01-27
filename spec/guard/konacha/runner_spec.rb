@@ -68,7 +68,7 @@ describe Guard::Konacha::Runner do
   describe '.run' do
     let(:host) { 'localhost' }
     let(:port) { 3500 }
-    let(:konacha_url) { "http://#{host}:#{port}#{path}?mode=runner" }
+    let(:konacha_url) { %r(^http://#{host}:#{port}#{path}\?mode=runner&unique=\d+$) }
 
     let(:failing_result) do
       {
@@ -104,7 +104,12 @@ describe Guard::Konacha::Runner do
       subject { described_class.new :host => host, :port => port }
 
       it 'runs all the tests' do
-        subject.should_receive(:run_tests).with(konacha_url, nil).and_return passing_result
+        subject.should_receive(:run_tests) do |url, path|
+          url.should match konacha_url
+          path.should be_nil
+
+          passing_result
+        end
         ::Guard::UI.should_receive(:info).with('Konacha Running: All tests')
         subject.run
       end
@@ -115,9 +120,39 @@ describe Guard::Konacha::Runner do
       let(:file_path) { 'spec/javascripts/model/user_spec.js.coffee' }
 
       it 'runs specific tests' do
-        subject.should_receive(:run_tests).with(konacha_url, file_path).and_return passing_result
+        subject.should_receive(:run_tests) do |url, path|
+          url.should match konacha_url
+          path.should eql file_path
+
+          passing_result
+        end
         ::Guard::UI.should_receive(:info).with("Konacha Running: #{file_path}")
         subject.run [file_path]
+      end
+
+      describe 'running the same test twice' do
+
+        let(:urls) do
+          konacha_urls = []
+          runner.should_receive(:run_tests) do |url, path|
+            konacha_urls << url
+
+            passing_result
+          end.twice
+
+          Timecop.freeze do
+            # run the same file twice
+
+            runner.run [file_path, file_path]
+          end
+          konacha_urls
+        end
+
+        subject { urls.uniq }
+
+        it 'guarantees a unique url' do
+          should_not have(1).url
+        end
       end
     end
 

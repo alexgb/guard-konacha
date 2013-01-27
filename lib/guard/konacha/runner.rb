@@ -117,7 +117,11 @@ module Guard
 
       def konacha_url(path = nil)
         url_path = path.gsub(/^#{@options[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
-        "#{konacha_base_url}/#{url_path}?mode=runner"
+        "#{konacha_base_url}/#{url_path}?mode=runner&unique=#{unique_id}"
+      end
+
+      def unique_id
+        "#{Time.now.to_i}#{rand(100)}"
       end
 
       def session
