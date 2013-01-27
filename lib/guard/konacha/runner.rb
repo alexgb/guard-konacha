@@ -109,15 +109,15 @@ module Guard
       end
 
       def spawn_konacha_command
-        cmd_parts = []
-        cmd_parts << "bundle exec" if bundler?
+        cmd_parts = ''
+        cmd_parts << "bundle exec " if bundler?
         cmd_parts << "rake konacha:serve"
-        cmd_parts.join(' ')
+        cmd_parts.split
       end
 
       def spawn_konacha
         unless @process
-          @process = ChildProcess.build(spawn_konacha_command)
+          @process = ChildProcess.build(*spawn_konacha_command)
           @process.io.inherit! if ::Guard.respond_to?(:options) && ::Guard.options && ::Guard.options[:verbose]
           @process.start
         end
