@@ -134,17 +134,18 @@ describe Guard::Konacha::Runner do
 
         let(:urls) do
           konacha_urls = []
-          runner.should_receive(:run_tests) do |url, path|
+          runner.stub(:run_tests) do |url, path|
             konacha_urls << url
 
             passing_result
-          end.twice
+          end
 
           Timecop.freeze do
             # run the same file twice
 
             runner.run [file_path, file_path]
           end
+
           konacha_urls
         end
 
