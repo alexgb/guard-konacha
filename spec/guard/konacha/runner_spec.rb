@@ -4,6 +4,27 @@ describe Guard::Konacha::Runner do
 
   let(:runner) { Guard::Konacha::Runner.new }
 
+  let(:status_code) { 200 }
+  let(:fake_session) do
+    double('capybara session',
+           :reset! => true,
+           :visit => true,
+           :status_code => status_code)
+  end
+  let(:fake_reporter) do
+    double('konacha reporter',
+           :example_count => 5,
+           :failure_count => 2,
+           :pending_count => 1,
+           :duration => 0.3
+          )
+  end
+  let(:fake_runner) do
+    double('konacha runner',
+           :run => true,
+           :reporter => fake_reporter)
+  end
+
   before do
     # Silence Ui.info output
     ::Guard::UI.stub :info => true
@@ -126,16 +147,6 @@ describe Guard::Konacha::Runner do
     end
 
     describe 'Capybara session' do
-      let(:fake_session) { double('capybara session', :visit => true, :status_code => 200) }
-      let(:fake_reporter) do
-        double('konacha reporter',
-               :example_count => 5,
-               :failure_count => 2,
-               :pending_count => 1,
-               :duration => 0.3
-              )
-      end
-      let(:fake_runner) { double('konacha runner', :run => true, :reporter => fake_reporter) }
       subject { described_class.new :driver => :other_driver }
 
       it 'can be configured to another driver' do
@@ -165,10 +176,15 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.run_tests' do
-    let(:status_code) { 200 }
-    let(:capybara_session) { double('capybara session', :status_code => status_code, :visit => true) }
     before do
-      subject.stub :session => capybara_session
+      subject.stub :session => fake_session
+    end
+
+    it 'resets the capybara session' do
+      # resetting the session between test runs is default policy. Cucumber::Rails does this aswell.
+      fake_session.should_receive(:reset!).once
+      ::Konacha::Runner.should_receive(:new).with(fake_session).and_return fake_runner
+      subject.run_tests('dummy url', nil)
     end
 
     context 'with missing spec' do
@@ -185,7 +201,7 @@ describe Guard::Konacha::Runner do
     context 'with runner raising exception' do
       before do
         subject.instance_variable_set(:@session, 'dummy')
-        subject.stub :session => double('capybara session', :status_code => 200, :visit => true)
+        subject.stub :session => fake_session
         ::Guard::UI.stub :error => true
       end
 

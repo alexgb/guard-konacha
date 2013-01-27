@@ -87,6 +87,7 @@ module Guard
       }
 
       def run_tests(url, path)
+        session.reset!
         session.visit url
 
         if session.status_code == 404
