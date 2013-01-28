@@ -4,6 +4,27 @@ describe Guard::Konacha::Runner do
 
   let(:runner) { Guard::Konacha::Runner.new }
 
+  let(:status_code) { 200 }
+  let(:fake_session) do
+    double('capybara session',
+           :reset! => true,
+           :visit => true,
+           :status_code => status_code)
+  end
+  let(:fake_reporter) do
+    double('konacha reporter',
+           :example_count => 5,
+           :failure_count => 2,
+           :pending_count => 1,
+           :duration => 0.3
+          )
+  end
+  let(:fake_runner) do
+    double('konacha runner',
+           :run => true,
+           :reporter => fake_reporter)
+  end
+
   before do
     # Silence Ui.info output
     ::Guard::UI.stub :info => true
@@ -47,7 +68,7 @@ describe Guard::Konacha::Runner do
   describe '.run' do
     let(:host) { 'localhost' }
     let(:port) { 3500 }
-    let(:konacha_url) { "http://#{host}:#{port}#{path}?mode=runner" }
+    let(:konacha_url) { %r(^http://#{host}:#{port}#{path}\?mode=runner&unique=\d+$) }
 
     let(:failing_result) do
       {
@@ -83,7 +104,12 @@ describe Guard::Konacha::Runner do
       subject { described_class.new :host => host, :port => port }
 
       it 'runs all the tests' do
-        subject.should_receive(:run_tests).with(konacha_url, nil).and_return passing_result
+        subject.should_receive(:run_tests) do |url, path|
+          url.should match konacha_url
+          path.should be_nil
+
+          passing_result
+        end
         ::Guard::UI.should_receive(:info).with('Konacha Running: All tests')
         subject.run
       end
@@ -94,9 +120,40 @@ describe Guard::Konacha::Runner do
       let(:file_path) { 'spec/javascripts/model/user_spec.js.coffee' }
 
       it 'runs specific tests' do
-        subject.should_receive(:run_tests).with(konacha_url, file_path).and_return passing_result
+        subject.should_receive(:run_tests) do |url, path|
+          url.should match konacha_url
+          path.should eql file_path
+
+          passing_result
+        end
         ::Guard::UI.should_receive(:info).with("Konacha Running: #{file_path}")
         subject.run [file_path]
+      end
+
+      describe 'running the same test twice' do
+
+        let(:urls) do
+          konacha_urls = []
+          runner.stub(:run_tests) do |url, path|
+            konacha_urls << url
+
+            passing_result
+          end
+
+          Timecop.freeze do
+            # run the same file twice
+
+            runner.run [file_path, file_path]
+          end
+
+          konacha_urls
+        end
+
+        subject { urls.uniq }
+
+        it 'guarantees a unique url' do
+          should_not have(1).url
+        end
       end
     end
 
@@ -126,16 +183,6 @@ describe Guard::Konacha::Runner do
     end
 
     describe 'Capybara session' do
-      let(:fake_session) { double('capybara session', :visit => true, :status_code => 200) }
-      let(:fake_reporter) do
-        double('konacha reporter',
-               :example_count => 5,
-               :failure_count => 2,
-               :pending_count => 1,
-               :duration => 0.3
-              )
-      end
-      let(:fake_runner) { double('konacha runner', :run => true, :reporter => fake_reporter) }
       subject { described_class.new :driver => :other_driver }
 
       it 'can be configured to another driver' do
@@ -165,10 +212,15 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.run_tests' do
-    let(:status_code) { 200 }
-    let(:capybara_session) { double('capybara session', :status_code => status_code, :visit => true) }
     before do
-      subject.stub :session => capybara_session
+      subject.stub :session => fake_session
+    end
+
+    it 'resets the capybara session' do
+      # resetting the session between test runs is default policy. Cucumber::Rails does this aswell.
+      fake_session.should_receive(:reset!).once
+      ::Konacha::Runner.should_receive(:new).with(fake_session).and_return fake_runner
+      subject.run_tests('dummy url', nil)
     end
 
     context 'with missing spec' do
@@ -185,7 +237,7 @@ describe Guard::Konacha::Runner do
     context 'with runner raising exception' do
       before do
         subject.instance_variable_set(:@session, 'dummy')
-        subject.stub :session => double('capybara session', :status_code => 200, :visit => true)
+        subject.stub :session => fake_session
         ::Guard::UI.stub :error => true
       end
 
