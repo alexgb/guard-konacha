@@ -66,8 +66,13 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.kill_konacha' do
-    it 'not call Process#kill with no spin_id' do
+    it 'will not call Process#kill without spin_id' do
       Process.should_not_receive(:kill)
+      subject.kill_konacha
+    end
+
+    it 'will reset the current capybara session' do
+      subject.should_receive :clear_session!
       subject.kill_konacha
     end
   end
@@ -237,15 +242,16 @@ describe Guard::Konacha::Runner do
     end
 
     context 'with runner raising exception' do
+      let(:session) { double('capybara-session', :reset! => true) }
       before do
-        subject.instance_variable_set(:@session, 'dummy')
+        subject.instance_variable_set(:@session, session)
         subject.stub :session => fake_session
         ::Guard::UI.stub :error => true
       end
 
       it 'resets the session' do
         ::Konacha::Runner.should_receive(:new) { throw :error }
-        expect { subject.run_tests('dummy url', nil) }.to change { subject.instance_variable_get(:@session) }.from('dummy').to(nil)
+        expect { subject.run_tests('dummy url', nil) }.to change { subject.instance_variable_get(:@session) }.from(session).to(nil)
       end
 
       it 'outputs the error to Guard' do

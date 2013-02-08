@@ -3,6 +3,7 @@ require 'childprocess'
 require 'capybara'
 require 'active_support/core_ext/module/delegation'
 require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/object/try'
 require 'konacha/reporter'
 require 'konacha/formatter'
 require 'konacha/runner'
@@ -35,6 +36,7 @@ module Guard
       end
 
       def kill_konacha
+        clear_session!
         if @process
           @process.stop(5)
           UI.info "Konacha Stopped", :reset => true
@@ -42,7 +44,7 @@ module Guard
       end
 
       def run(paths=[])
-        return UI.info("Konacha server not running") unless konacha_running?
+        return UI.info("Konacha server not running (Could still be starting...)") unless konacha_running?
 
         UI.info "Konacha Running: #{paths.empty? ? 'All tests' : paths.join(' ')}"
 
@@ -88,7 +90,6 @@ module Guard
       }
 
       def run_tests(url, path)
-        session.reset!
         session.visit url
 
         if session.status_code == 404
@@ -98,6 +99,8 @@ module Guard
 
         runner = ::Konacha::Runner.new session
         runner.run url
+
+        session.reset!
         return {
           :examples => runner.reporter.example_count,
           :failures => runner.reporter.failure_count,
@@ -106,6 +109,13 @@ module Guard
         }
       rescue => e
         UI.error e.inspect
+        clear_session!
+      end
+
+      def clear_session!
+        return unless @session
+        UI.info "Stopping Capybara session"
+        @session.reset!
         @session = nil
       end
 
