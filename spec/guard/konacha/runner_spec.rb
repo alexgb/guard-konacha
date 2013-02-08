@@ -71,6 +71,14 @@ describe Guard::Konacha::Runner do
       subject.kill_konacha
     end
 
+    it 'will stop the server process' do
+      server_process = double('Konacha server process')
+      server_process.should_receive(:stop)
+      subject.instance_variable_set(:@process, server_process)
+
+      subject.kill_konacha
+    end
+
     it 'will reset the current capybara session' do
       subject.should_receive :clear_session!
       subject.kill_konacha
