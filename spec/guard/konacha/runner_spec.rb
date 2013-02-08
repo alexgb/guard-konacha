@@ -78,8 +78,6 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.run' do
-    let(:konacha_url) { %r(^#{path}\?mode=runner&unique=\d+$) }
-
     let(:failing_result) do
       {
         :examples => 3,
@@ -111,9 +109,9 @@ describe Guard::Konacha::Runner do
       let(:path) { '/' }
 
       it 'runs all the tests' do
-        subject.should_receive(:run_tests) do |url, path|
-          url.should match konacha_url
-          path.should be_nil
+        subject.should_receive(:run_tests) do |url, file_path|
+          url.should match path
+          file_path.should be_nil
 
           passing_result
         end
@@ -127,9 +125,9 @@ describe Guard::Konacha::Runner do
       let(:file_path) { 'spec/javascripts/model/user_spec.js.coffee' }
 
       it 'runs specific tests' do
-        subject.should_receive(:run_tests) do |url, path|
-          url.should match konacha_url
-          path.should eql file_path
+        subject.should_receive(:run_tests) do |url, file_path|
+          url.should match path
+          file_path.should eql file_path
 
           passing_result
         end
@@ -137,31 +135,6 @@ describe Guard::Konacha::Runner do
         subject.run [file_path]
       end
 
-      describe 'running the same test twice' do
-
-        let(:urls) do
-          konacha_urls = []
-          runner.stub(:run_tests) do |url, path|
-            konacha_urls << url
-
-            passing_result
-          end
-
-          Timecop.freeze do
-            # run the same file twice
-
-            runner.run [file_path, file_path]
-          end
-
-          konacha_urls
-        end
-
-        subject { urls.uniq }
-
-        it 'guarantees a unique url' do
-          should_not have(1).url
-        end
-      end
     end
 
     it 'aggregates multiple test results' do
@@ -228,6 +201,24 @@ describe Guard::Konacha::Runner do
       fake_session.should_receive(:reset!).once
       ::Konacha::Runner.should_receive(:new).with(fake_session).and_return fake_runner
       subject.run_tests('dummy url', nil)
+    end
+
+    it 'never uses the same url twice' do
+      session_url = nil
+      runner_url = nil
+
+      fake_session.stub(:visit) do |url|
+        session_url = url
+      end
+      ::Konacha::Runner.stub :new => fake_runner
+      fake_runner.stub(:run) do |url|
+        runner_url = url
+      end
+      Timecop.freeze do
+        subject.run_tests('/path_spec', 'file_path')
+      end
+
+      session_url.should_not eql runner_url
     end
 
     context 'with missing spec' do

@@ -90,7 +90,8 @@ module Guard
       }
 
       def run_tests(url, path)
-        session.visit url
+        UI.info "Executing: #{url}"
+        session.visit unique_runner_url(url)
 
         if session.status_code == 404
           UI.warning "No spec found for: #{path}"
@@ -98,7 +99,7 @@ module Guard
         end
 
         runner = ::Konacha::Runner.new session
-        runner.run url
+        runner.run unique_runner_url(url)
 
         session.reset!
         return {
@@ -128,7 +129,11 @@ module Guard
 
       def konacha_url(path = nil)
         url_path = path.gsub(/^#{@options[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
-        "/#{url_path}?mode=runner&unique=#{unique_id}"
+        "/#{url_path}"
+      end
+
+      def unique_runner_url(path)
+        "#{path}?mode=runner&unique=#{unique_id}"
       end
 
       def unique_id
