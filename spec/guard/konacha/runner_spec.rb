@@ -43,6 +43,13 @@ describe Guard::Konacha::Runner do
       let(:runner) { Guard::Konacha::Runner.new :run_all => false }
       it { should eq(Guard::Konacha::Runner::DEFAULT_OPTIONS.merge(:run_all => false)) }
     end
+
+    context 'with specified port and host' do
+      let(:runner) { Guard::Konacha::Runner.new :host => 'other_host', :port => 1234 }
+      it "sets the default Capybara app_host to the correct value" do
+        Capybara.app_host.should eql 'http://other_host:1234'
+      end
+    end
   end
 
   describe '.launch_konacha' do
@@ -66,9 +73,7 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.run' do
-    let(:host) { 'localhost' }
-    let(:port) { 3500 }
-    let(:konacha_url) { %r(^http://#{host}:#{port}#{path}\?mode=runner&unique=\d+$) }
+    let(:konacha_url) { %r(^#{path}\?mode=runner&unique=\d+$) }
 
     let(:failing_result) do
       {
@@ -99,9 +104,6 @@ describe Guard::Konacha::Runner do
 
     context 'without arguments' do
       let(:path) { '/' }
-      let(:port) { 4000 }
-      let(:host) { 'other_host' }
-      subject { described_class.new :host => host, :port => port }
 
       it 'runs all the tests' do
         subject.should_receive(:run_tests) do |url, path|
