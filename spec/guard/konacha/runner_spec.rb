@@ -174,7 +174,10 @@ describe Guard::Konacha::Runner do
       subject { described_class.new :driver => :other_driver }
 
       it 'can be configured to another driver' do
-        ::Capybara::Session.should_receive(:new).with(:other_driver).and_return(fake_session)
+        # first run creates inital session, but it is rebuild
+        # when the test is finished. This results in the session
+        # being created twice
+        ::Capybara::Session.should_receive(:new).twice.with(:other_driver).and_return(fake_session)
         ::Konacha::Runner.should_receive(:new).with(fake_session).and_return(fake_runner)
         subject.run
       end
@@ -250,7 +253,8 @@ describe Guard::Konacha::Runner do
 
       it 'resets the session' do
         ::Konacha::Runner.should_receive(:new) { throw :error }
-        expect { subject.run_tests('dummy url', nil) }.to change { subject.instance_variable_get(:@session) }.from(session).to(nil)
+        subject.should_receive :reset_session!
+        subject.run_tests('dummy url', nil)
       end
 
       it 'outputs the error to Guard' do

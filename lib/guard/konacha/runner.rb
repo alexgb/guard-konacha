@@ -109,13 +109,22 @@ module Guard
       rescue => e
         UI.error e.inspect
       ensure
-        clear_session!
+        reset_session!
       end
 
       def clear_session!
         return unless @session
         @session.reset!
         @session = nil
+      end
+
+      def create_session
+        @session = Capybara::Session.new @options[:driver]
+      end
+
+      def reset_session!
+        clear_session!
+        create_session
       end
 
       def run_all
