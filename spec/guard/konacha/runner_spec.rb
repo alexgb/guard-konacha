@@ -43,6 +43,13 @@ describe Guard::Konacha::Runner do
       let(:runner) { Guard::Konacha::Runner.new :run_all => false }
       it { should eq(Guard::Konacha::Runner::DEFAULT_OPTIONS.merge(:run_all => false)) }
     end
+
+    context 'with specified port and host' do
+      let(:runner) { Guard::Konacha::Runner.new :host => 'other_host', :port => 1234 }
+      it "sets the default Capybara app_host to the correct value" do
+        Capybara.app_host.should eql 'http://other_host:1234'
+      end
+    end
   end
 
   describe '.launch_konacha' do
@@ -59,17 +66,26 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.kill_konacha' do
-    it 'not call Process#kill with no spin_id' do
+    it 'will not call Process#kill without spin_id' do
       Process.should_not_receive(:kill)
+      subject.kill_konacha
+    end
+
+    it 'will stop the server process' do
+      server_process = double('Konacha server process')
+      server_process.should_receive(:stop)
+      subject.instance_variable_set(:@process, server_process)
+
+      subject.kill_konacha
+    end
+
+    it 'will reset the current capybara session' do
+      subject.should_receive :clear_session!
       subject.kill_konacha
     end
   end
 
   describe '.run' do
-    let(:host) { 'localhost' }
-    let(:port) { 3500 }
-    let(:konacha_url) { %r(^http://#{host}:#{port}#{path}\?mode=runner&unique=\d+$) }
-
     let(:failing_result) do
       {
         :examples => 3,
@@ -99,14 +115,11 @@ describe Guard::Konacha::Runner do
 
     context 'without arguments' do
       let(:path) { '/' }
-      let(:port) { 4000 }
-      let(:host) { 'other_host' }
-      subject { described_class.new :host => host, :port => port }
 
       it 'runs all the tests' do
-        subject.should_receive(:run_tests) do |url, path|
-          url.should match konacha_url
-          path.should be_nil
+        subject.should_receive(:run_tests) do |url, file_path|
+          url.should match path
+          file_path.should be_nil
 
           passing_result
         end
@@ -120,9 +133,9 @@ describe Guard::Konacha::Runner do
       let(:file_path) { 'spec/javascripts/model/user_spec.js.coffee' }
 
       it 'runs specific tests' do
-        subject.should_receive(:run_tests) do |url, path|
-          url.should match konacha_url
-          path.should eql file_path
+        subject.should_receive(:run_tests) do |url, file_path|
+          url.should match path
+          file_path.should eql file_path
 
           passing_result
         end
@@ -130,31 +143,6 @@ describe Guard::Konacha::Runner do
         subject.run [file_path]
       end
 
-      describe 'running the same test twice' do
-
-        let(:urls) do
-          konacha_urls = []
-          runner.stub(:run_tests) do |url, path|
-            konacha_urls << url
-
-            passing_result
-          end
-
-          Timecop.freeze do
-            # run the same file twice
-
-            runner.run [file_path, file_path]
-          end
-
-          konacha_urls
-        end
-
-        subject { urls.uniq }
-
-        it 'guarantees a unique url' do
-          should_not have(1).url
-        end
-      end
     end
 
     it 'aggregates multiple test results' do
@@ -186,7 +174,10 @@ describe Guard::Konacha::Runner do
       subject { described_class.new :driver => :other_driver }
 
       it 'can be configured to another driver' do
-        ::Capybara::Session.should_receive(:new).with(:other_driver).and_return(fake_session)
+        # first run creates inital session, but it is rebuild
+        # when the test is finished. This results in the session
+        # being created twice
+        ::Capybara::Session.should_receive(:new).twice.with(:other_driver).and_return(fake_session)
         ::Konacha::Runner.should_receive(:new).with(fake_session).and_return(fake_runner)
         subject.run
       end
@@ -216,11 +207,29 @@ describe Guard::Konacha::Runner do
       subject.stub :session => fake_session
     end
 
-    it 'resets the capybara session' do
-      # resetting the session between test runs is default policy. Cucumber::Rails does this aswell.
-      fake_session.should_receive(:reset!).once
+    it 'clears the capybara session' do
       ::Konacha::Runner.should_receive(:new).with(fake_session).and_return fake_runner
+      subject.should_receive :clear_session!
+
       subject.run_tests('dummy url', nil)
+    end
+
+    it 'never uses the same url twice' do
+      session_url = nil
+      runner_url = nil
+
+      fake_session.stub(:visit) do |url|
+        session_url = url
+      end
+      ::Konacha::Runner.stub :new => fake_runner
+      fake_runner.stub(:run) do |url|
+        runner_url = url
+      end
+      Timecop.freeze do
+        subject.run_tests('/path_spec', 'file_path')
+      end
+
+      session_url.should_not eql runner_url
     end
 
     context 'with missing spec' do
@@ -235,15 +244,17 @@ describe Guard::Konacha::Runner do
     end
 
     context 'with runner raising exception' do
+      let(:session) { double('capybara-session', :reset! => true) }
       before do
-        subject.instance_variable_set(:@session, 'dummy')
+        subject.instance_variable_set(:@session, session)
         subject.stub :session => fake_session
         ::Guard::UI.stub :error => true
       end
 
       it 'resets the session' do
         ::Konacha::Runner.should_receive(:new) { throw :error }
-        expect { subject.run_tests('dummy url', nil) }.to change { subject.instance_variable_get(:@session) }.from('dummy').to(nil)
+        subject.should_receive :reset_session!
+        subject.run_tests('dummy url', nil)
       end
 
       it 'outputs the error to Guard' do

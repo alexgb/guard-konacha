@@ -3,6 +3,7 @@ require 'childprocess'
 require 'capybara'
 require 'active_support/core_ext/module/delegation'
 require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/object/try'
 require 'konacha/reporter'
 require 'konacha/formatter'
 require 'konacha/runner'
@@ -25,6 +26,7 @@ module Guard
 
       def initialize(options={})
         @options = DEFAULT_OPTIONS.merge(options)
+        Capybara.app_host = konacha_base_url
         UI.info "Guard::Konacha Initialized"
       end
 
@@ -34,6 +36,7 @@ module Guard
       end
 
       def kill_konacha
+        clear_session!
         if @process
           @process.stop(5)
           UI.info "Konacha Stopped", :reset => true
@@ -41,7 +44,7 @@ module Guard
       end
 
       def run(paths=[])
-        return UI.info("Konacha server not running") unless konacha_running?
+        return UI.info("Konacha server not running (Could still be starting...)") unless konacha_running?
 
         UI.info "Konacha Running: #{paths.empty? ? 'All tests' : paths.join(' ')}"
 
@@ -84,11 +87,10 @@ module Guard
         :failures => 0,
         :pending  => 0,
         :duration => 0,
-      }
+      }.freeze
 
       def run_tests(url, path)
-        session.reset!
-        session.visit url
+        session.visit unique_runner_url(url)
 
         if session.status_code == 404
           UI.warning "No spec found for: #{path}"
@@ -96,7 +98,8 @@ module Guard
         end
 
         runner = ::Konacha::Runner.new session
-        runner.run url
+        runner.run unique_runner_url(url)
+
         return {
           :examples => runner.reporter.example_count,
           :failures => runner.reporter.failure_count,
@@ -105,7 +108,23 @@ module Guard
         }
       rescue => e
         UI.error e.inspect
+      ensure
+        reset_session!
+      end
+
+      def clear_session!
+        return unless @session
+        @session.reset!
         @session = nil
+      end
+
+      def create_session
+        @session = Capybara::Session.new @options[:driver]
+      end
+
+      def reset_session!
+        clear_session!
+        create_session
       end
 
       def run_all
@@ -117,7 +136,11 @@ module Guard
 
       def konacha_url(path = nil)
         url_path = path.gsub(/^#{@options[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
-        "#{konacha_base_url}/#{url_path}?mode=runner&unique=#{unique_id}"
+        "/#{url_path}"
+      end
+
+      def unique_runner_url(path)
+        "#{path}?mode=runner&unique=#{unique_id}"
       end
 
       def unique_id
@@ -125,8 +148,7 @@ module Guard
       end
 
       def session
-        UI.info "Starting Konacha-Capybara session using #{@options[:driver]} driver, this can take a few seconds..." if @session.nil?
-        @session ||= Capybara::Session.new @options[:driver]
+        @session || create_session
       end
 
       def spawn_konacha_command
