@@ -204,10 +204,10 @@ describe Guard::Konacha::Runner do
       subject.stub :session => fake_session
     end
 
-    it 'resets the capybara session' do
-      # resetting the session between test runs is default policy. Cucumber::Rails does this aswell.
-      fake_session.should_receive(:reset!).once
+    it 'clears the capybara session' do
       ::Konacha::Runner.should_receive(:new).with(fake_session).and_return fake_runner
+      subject.should_receive :clear_session!
+
       subject.run_tests('dummy url', nil)
     end
 

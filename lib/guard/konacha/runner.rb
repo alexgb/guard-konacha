@@ -101,7 +101,6 @@ module Guard
         runner = ::Konacha::Runner.new session
         runner.run unique_runner_url(url)
 
-        session.reset!
         return {
           :examples => runner.reporter.example_count,
           :failures => runner.reporter.failure_count,
@@ -110,12 +109,12 @@ module Guard
         }
       rescue => e
         UI.error e.inspect
+      ensure
         clear_session!
       end
 
       def clear_session!
         return unless @session
-        UI.info "Stopping Capybara session"
         @session.reset!
         @session = nil
       end
