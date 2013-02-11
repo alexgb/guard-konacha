@@ -87,10 +87,9 @@ module Guard
         :failures => 0,
         :pending  => 0,
         :duration => 0,
-      }
+      }.freeze
 
       def run_tests(url, path)
-        UI.info "Executing: #{url}"
         session.visit unique_runner_url(url)
 
         if session.status_code == 404
@@ -140,8 +139,7 @@ module Guard
       end
 
       def session
-        UI.info "Starting Konacha-Capybara session using #{@options[:driver]} driver, this can take a few seconds..." if @session.nil?
-        @session ||= Capybara::Session.new @options[:driver]
+        @session || create_session
       end
 
       def spawn_konacha_command
