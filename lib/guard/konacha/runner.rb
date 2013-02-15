@@ -90,9 +90,13 @@ module Guard
         session.reset!
         session.visit url
 
-        if session.status_code == 404
-          UI.warning "No spec found for: #{path}"
-          return EMPTY_RESULT
+        begin
+          if session.status_code == 404
+            UI.warning "No spec found for: #{path}"
+            return EMPTY_RESULT
+          end
+        rescue Capybara::NotSupportedByDriverError
+          # selenium driver does not support status_code
         end
 
         runner = ::Konacha::Runner.new session

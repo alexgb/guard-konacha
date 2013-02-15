@@ -234,6 +234,20 @@ describe Guard::Konacha::Runner do
       end
     end
 
+    context 'with driver not supporting status_code' do
+      let(:missing_spec) { 'models/missing_spec' }
+
+      before do
+        fake_session.stub(:status_code).and_raise(Capybara::NotSupportedByDriverError.new)
+      end
+
+      it 'runs the tests without 404 checking' do
+        ::Guard::UI.should_receive(:warning).never.with("No spec found for: #{missing_spec}")
+        ::Konacha::Runner.should_receive(:new).with(fake_session).and_return fake_runner
+        subject.run_tests('dummy url', missing_spec)
+      end
+    end
+
     context 'with runner raising exception' do
       before do
         subject.instance_variable_set(:@session, 'dummy')
