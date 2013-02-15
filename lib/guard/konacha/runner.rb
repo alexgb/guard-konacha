@@ -88,15 +88,9 @@ module Guard
 
       def run_tests(url, path)
         session.reset!
-        session.visit url
-
-        begin
-          if session.status_code == 404
-            UI.warning "No spec found for: #{path}"
-            return EMPTY_RESULT
-          end
-        rescue Capybara::NotSupportedByDriverError
-          # selenium driver does not support status_code
+        unless valid_spec? url
+          UI.warning "No spec found for: #{path}"
+          return EMPTY_RESULT
         end
 
         runner = ::Konacha::Runner.new session
@@ -160,6 +154,13 @@ module Guard
       def bundler?
         @bundler ||= options[:bundler] != false && File.exist?("#{Dir.pwd}/Gemfile")
       end
+
+      def valid_spec? url
+        session.visit url
+        konacha_spec = session.evaluate_script('typeof window.top.Konacha')
+        konacha_spec == 'object'
+      end
+
     end
   end
 end

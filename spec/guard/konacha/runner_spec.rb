@@ -9,7 +9,7 @@ describe Guard::Konacha::Runner do
     double('capybara session',
            :reset! => true,
            :visit => true,
-           :status_code => status_code)
+           :evaluate_script => true)
   end
   let(:fake_reporter) do
     double('konacha reporter',
@@ -184,6 +184,9 @@ describe Guard::Konacha::Runner do
 
     describe 'Capybara session' do
       subject { described_class.new :driver => :other_driver }
+      before do
+        subject.stub :valid_spec? => true
+      end
 
       it 'can be configured to another driver' do
         ::Capybara::Session.should_receive(:new).with(:other_driver).and_return(fake_session)
@@ -213,7 +216,7 @@ describe Guard::Konacha::Runner do
 
   describe '.run_tests' do
     before do
-      subject.stub :session => fake_session
+      subject.stub :session => fake_session, :valid_spec? => true
     end
 
     it 'resets the capybara session' do
@@ -224,26 +227,18 @@ describe Guard::Konacha::Runner do
     end
 
     context 'with missing spec' do
-      let(:status_code) { 404 }
+      before do
+        subject.stub(:valid_spec? => false)
+      end
       let(:missing_spec) { 'models/missing_spec' }
 
       it 'aborts the test with a missing result' do
-        ::Guard::UI.should_receive(:warning).with("No spec found for: #{missing_spec}")
         ::Konacha::Runner.should_receive(:new).never
         subject.run_tests('dummy url', missing_spec).should eql described_class::EMPTY_RESULT
       end
-    end
 
-    context 'with driver not supporting status_code' do
-      let(:missing_spec) { 'models/missing_spec' }
-
-      before do
-        fake_session.stub(:status_code).and_raise(Capybara::NotSupportedByDriverError.new)
-      end
-
-      it 'runs the tests without 404 checking' do
-        ::Guard::UI.should_receive(:warning).never.with("No spec found for: #{missing_spec}")
-        ::Konacha::Runner.should_receive(:new).with(fake_session).and_return fake_runner
+      it 'outputs that the spec is missing' do
+        ::Guard::UI.should_receive(:warning).with("No spec found for: #{missing_spec}")
         subject.run_tests('dummy url', missing_spec)
       end
     end
@@ -269,6 +264,41 @@ describe Guard::Konacha::Runner do
         subject.run_tests('dummy url', nil)
       end
     end
+  end
+
+  describe '.valid_spec?' do
+    let(:runner) { described_class.new :driver => :other_driver }
+    before do
+      ::Capybara::Session.should_receive(:new).with(:other_driver).and_return(fake_session)
+    end
+
+    let(:url) { 'http://example.com/' }
+    let(:valid_spec) { runner.send(:valid_spec?, url) }
+
+    it 'visits the url in advance' do
+      fake_session.should_receive(:visit).with(url)
+      valid_spec
+    end
+
+    it 'will verify page health using javascript' do
+      fake_session.should_receive(:evaluate_script).with('typeof window.top.Konacha')
+      valid_spec
+    end
+
+    context 'with spec loaded correctly' do
+      before do
+        fake_session.should_receive(:evaluate_script).and_return 'object'
+      end
+      it { valid_spec.should be_true }
+    end
+
+    context 'with spec loaded incorrectly' do
+      before do
+        fake_session.should_receive(:evaluate_script).and_return 'undefined'
+      end
+      it { valid_spec.should be_false }
+    end
+
   end
 
   describe '.bundler?' do
