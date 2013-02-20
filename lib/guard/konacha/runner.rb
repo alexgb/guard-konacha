@@ -15,6 +15,7 @@ module Guard
         :bundler  => true,
         :spec_dir => 'spec/javascripts',
         :run_all  => true,
+        :all_on_start => true,
         :driver   => :selenium,
         :host     => 'localhost',
         :port     => 3500,
@@ -111,6 +112,12 @@ module Guard
         run
       end
 
+      def run_all_on_start
+         return unless @options[:all_on_start] &&  @options[:run_all]
+         wait_for { konacha_running? }
+         run_all
+      end
+
       private
 
       def konacha_url(path = nil)
@@ -149,6 +156,15 @@ module Guard
       def konacha_running?
         Net::HTTP.get_response(URI.parse(konacha_base_url))
       rescue Errno::ECONNREFUSED
+      end
+
+      def wait_for(timeout=10, delay = 0.1)
+        Timeout.timeout(timeout) do
+          sleep delay
+          success = yield until success
+        end
+      rescue Timeout::Error
+        nil
       end
 
       def bundler?

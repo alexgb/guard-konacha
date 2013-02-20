@@ -15,6 +15,7 @@ module Guard
     def start
       runner.kill_konacha
       runner.launch_konacha("Start")
+      runner.run_all_on_start
     end
 
     def reload
