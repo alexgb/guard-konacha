@@ -160,8 +160,11 @@ module Guard
 
       def wait_for(timeout=10, delay = 0.1)
         Timeout.timeout(timeout) do
-          sleep delay
-          success = yield until success
+          success = false
+          until success do
+            sleep delay
+            success = yield
+          end
         end
       rescue Timeout::Error
         nil
