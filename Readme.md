@@ -21,7 +21,7 @@ Add guard definitions to your `Guardfile`
       watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)$})
     end
 
-## Configure
+## Configuration
 
 If your specs live outside of `spec/javascripts` then tell Konacha where to find them.
 
@@ -29,12 +29,18 @@ If your specs live outside of `spec/javascripts` then tell Konacha where to find
       # ...
     end
 
-If you want to use capybara-webkit instead of the default selenium
+If you want to use [capybara-webkit](https://github.com/thoughtbot/capybara-webkit) instead of the default selenium
 driver:
 
     require 'capybara-webkit'
-
     guard :konacha, :driver => :webkit do
+      # ...
+    end
+
+Or use [Poltergeist](https://github.com/jonleighton/poltergeist):
+
+    require 'capybara/poltergeist'
+    guard :konacha, :driver => :poltergeist do
       # ...
     end
 
