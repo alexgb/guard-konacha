@@ -19,7 +19,8 @@ module Guard
         :driver   => :selenium,
         :host     => 'localhost',
         :port     => 3500,
-        :notification => true
+        :notification => true,
+        :spawn_wait => 20
       }
 
       attr_reader :options
@@ -108,14 +109,11 @@ module Guard
       end
 
       def run_all
-        return unless @options[:run_all]
-        run
+        run if @options[:run_all]
       end
 
       def run_all_on_start
-         return unless @options[:all_on_start] &&  @options[:run_all]
-         wait_for { konacha_running? }
-         run_all
+         run_all if @options[:all_on_start]
       end
 
       private
@@ -146,6 +144,12 @@ module Guard
           @process = ChildProcess.build(*spawn_konacha_command)
           @process.io.inherit! if ::Guard.respond_to?(:options) && ::Guard.options && ::Guard.options[:verbose]
           @process.start
+
+           Timeout::timeout(@options[:spawn_wait]) do
+            until konacha_running?
+              sleep(0.2)
+            end
+          end
         end
       end
 
@@ -156,18 +160,6 @@ module Guard
       def konacha_running?
         Net::HTTP.get_response(URI.parse(konacha_base_url))
       rescue Errno::ECONNREFUSED
-      end
-
-      def wait_for(timeout=10, delay = 0.1)
-        Timeout.timeout(timeout) do
-          success = false
-          until success do
-            sleep delay
-            success = yield
-          end
-        end
-      rescue Timeout::Error
-        nil
       end
 
       def bundler?

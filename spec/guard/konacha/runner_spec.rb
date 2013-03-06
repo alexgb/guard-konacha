@@ -214,6 +214,22 @@ describe Guard::Konacha::Runner do
     end
   end
 
+  describe '.run_all_on_start' do
+    it "calls Runner.run with 'spec'" do
+      subject.should_receive(:run_all)
+      subject.run_all_on_start
+    end
+
+    context 'with :all_on_start set to false' do
+      let(:runner) { Guard::Konacha::Runner.new :all_on_start => false }
+
+      it 'not run all specs' do
+        runner.should_not_receive(:run_all)
+        runner.run_all_on_start
+      end
+    end
+  end
+
   describe '.run_tests' do
     before do
       subject.stub :session => fake_session, :valid_spec? => true
@@ -229,6 +245,7 @@ describe Guard::Konacha::Runner do
     context 'with missing spec' do
       before do
         subject.stub(:valid_spec? => false)
+        ::Guard::UI.stub :warning => true
       end
       let(:missing_spec) { 'models/missing_spec' }
 

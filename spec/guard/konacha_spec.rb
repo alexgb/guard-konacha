@@ -19,6 +19,7 @@ describe Guard::Konacha do
     it "calls Runner.kill_spin and Runner.launch_spin with 'Start'" do
       subject.runner.should_receive(:kill_konacha)
       subject.runner.should_receive(:launch_konacha).with('Start')
+      subject.runner.should_receive(:run_all)
       subject.start
     end
   end
