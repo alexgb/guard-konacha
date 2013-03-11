@@ -36,6 +36,7 @@ module Guard
       end
 
       def kill_konacha
+        clear_session!
         if @process
           @process.stop(5)
           UI.info "Konacha Stopped", :reset => true
@@ -130,6 +131,12 @@ module Guard
       def session
         UI.info "Starting Konacha-Capybara session using #{@options[:driver]} driver, this can take a few seconds..." if @session.nil?
         @session ||= Capybara::Session.new @options[:driver]
+      end
+
+      def clear_session!
+        return unless @session
+        @session.reset!
+        @session = nil
       end
 
       def spawn_konacha_command
