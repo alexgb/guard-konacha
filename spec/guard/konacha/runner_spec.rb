@@ -59,9 +59,37 @@ describe Guard::Konacha::Runner do
   end
 
   describe '.kill_konacha' do
-    it 'not call Process#kill with no spin_id' do
+
+    it 'will not call Process#kill without spin_id' do
       Process.should_not_receive(:kill)
       subject.kill_konacha
+    end
+
+    it 'will stop the server process' do
+      server_process = double('Konacha server process')
+      server_process.should_receive(:stop)
+      subject.instance_variable_set(:@process, server_process)
+
+      subject.kill_konacha
+    end
+
+    describe 'clearing capybara session' do
+      let(:session) { double('capybara session', :reset! => true) }
+
+      before do
+        subject.instance_variable_set(:@session, session)
+      end
+
+      it 'will clear the current capybara session' do
+        expect {
+          subject.kill_konacha
+        }.to change { subject.instance_variable_get(:@session) }.to nil
+      end
+
+      it 'will reset session before clearing' do
+        session.should_receive :reset!
+        subject.kill_konacha
+      end
     end
   end
 
@@ -192,12 +220,12 @@ describe Guard::Konacha::Runner do
         ::Capybara::Session.should_receive(:new).with(:other_driver).and_return(fake_session)
         ::Konacha::Runner.should_receive(:new).with(fake_session).and_return(fake_runner)
         subject.run
+        end
       end
     end
-  end
 
-  describe '.run_all' do
-    context 'with rspec' do
+    describe '.run_all' do
+      context 'with rspec' do
       it "calls Runner.run with 'spec'" do
         subject.should_receive(:run)
         subject.run_all
