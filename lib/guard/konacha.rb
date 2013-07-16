@@ -5,6 +5,9 @@ module Guard
   class Konacha < Guard
 
     autoload :Runner, 'guard/konacha/runner'
+    autoload :Formatter, 'guard/konacha/formatter'
+    autoload :Server, 'guard/konacha/server'
+
     attr_accessor :runner
 
     def initialize(watchers=[], options={})
@@ -13,18 +16,11 @@ module Guard
     end
 
     def start
-      runner.kill_konacha
-      runner.launch_konacha("Start")
-      runner.run_all_on_start
-    end
-
-    def reload
-      runner.kill_konacha
-      runner.launch_konacha("Reload")
+      runner.start
     end
 
     def run_all
-      runner.run_all
+      runner.run
     end
 
     def run_on_changes(paths)
@@ -32,10 +28,6 @@ module Guard
     end
     # for guard 1.0.x and earlier
     alias :run_on_change :run_on_changes
-
-    def stop
-      runner.kill_konacha
-    end
 
   end
 end
