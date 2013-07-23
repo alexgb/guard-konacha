@@ -8,28 +8,25 @@ module Guard
         :rails_environment_file => './config/environment'
       }
 
-      attr_reader :options, :session
+      attr_reader :options
 
       def initialize(options={})
         @options = DEFAULT_OPTIONS.merge(options)
 
-        # Require rails config/environment
-        require @options[:rails_environment_file]
+        # Must require user's rails environment prior to requiring Konacha
+        require_rails_environment
+        raise "Konacha not loaded" unless defined? ::Konacha
 
         # Custom formatter to handle multiple runs
         @formatter = Formatter.new
         ::Konacha.config.formatters = [@formatter]
 
-        # Reuse session to increase performance
+        # Reusable session to increase performance
         @session = Capybara::Session.new(::Konacha.driver, Server.new)
 
         ::Konacha.mode = :runner
 
         UI.info "Guard::Konacha Initialized"
-      end
-
-      def runner
-        ::Konacha::Runner.new(session)
       end
 
       def start
@@ -49,16 +46,29 @@ module Guard
         UI.error(e)
       end
 
-      def notify
-        if options[:notification]
-          image = @formatter.success? ? :success : :failed
-          ::Guard::Notifier.notify(@formatter.summary_line, :title => "Konacha Specs", :image => image)
-        end
-      end
-
 
       private
 
+
+      def require_rails_environment
+        if @options[:rails_environment_file]
+          require @options[:rails_environment_file]
+        else
+          dir = '.'
+          while File.expand_path(dir) != '/' do
+            env_file = File.join(dir, 'config/environment.rb')
+            if File.exist?(env_file)
+              require File.expand_path(env_file)
+              break
+            end
+            dir = File.join(dir, '..')
+          end
+        end
+      end
+
+      def runner
+        ::Konacha::Runner.new(@session)
+      end
 
       def konacha_path(path)
         '/' + path.gsub(/^#{::Konacha.config[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '')
@@ -66,6 +76,13 @@ module Guard
 
       def unique_id
         "#{Time.now.to_i}#{rand(100)}"
+      end
+
+      def notify
+        if options[:notification]
+          image = @formatter.success? ? :success : :failed
+          ::Guard::Notifier.notify(@formatter.summary_line, :title => "Konacha Specs", :image => image)
+        end
       end
 
     end
