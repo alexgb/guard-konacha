@@ -9,17 +9,16 @@ Gem::Specification.new do |s|
   s.authors     = ['Alex Gibbons']
   s.email       = ['alex.gibbons@gmail.com']
   s.homepage    = 'https://github.com/alexgb/guard-konacha'
-  s.summary     = 'Guard gem for Konacha'
+  s.summary     = 'Guard plugin for Konacha'
   s.description = 'Automatically run konacha tests'
 
   s.add_dependency 'guard',   '~> 1.1'
-  s.add_dependency 'konacha', '>= 2.3'
-  s.add_dependency 'activesupport', '>= 2.2'
-  s.add_dependency 'childprocess', '>= 0.2.5'
+  s.add_dependency 'konacha', '>= 3.0'
 
-  s.add_development_dependency 'rspec'
+  s.add_development_dependency 'rspec', '>= 2.13'
   s.add_development_dependency 'timecop'
   s.add_development_dependency 'simplecov'
+  s.add_development_dependency 'poltergeist'
 
   s.files        = Dir.glob('{lib}/**/*') + %w[LICENSE Readme.md]
   s.require_path = 'lib'

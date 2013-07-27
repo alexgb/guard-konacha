@@ -1,182 +1,89 @@
-require 'net/http'
-require 'childprocess'
-require 'capybara'
-require 'active_support/core_ext/module/delegation'
-require 'active_support/core_ext/object/blank'
-require 'konacha/reporter'
-require 'konacha/formatter'
-require 'konacha/runner'
-
 module Guard
   class Konacha
     class Runner
 
       DEFAULT_OPTIONS = {
-        :bundler  => true,
-        :spec_dir => 'spec/javascripts',
-        :run_all  => true,
-        :all_on_start => true,
-        :driver   => :selenium,
-        :host     => 'localhost',
-        :port     => 3500,
+        :run_all_on_start => :true,
         :notification => true,
-        :spawn_wait => 20
+        :rails_environment_file => './config/environment'
       }
 
-      attr_reader :options
+      attr_reader :options, :formatter
 
       def initialize(options={})
         @options = DEFAULT_OPTIONS.merge(options)
+
+        # Require project's rails environment file to load Konacha 
+        # configuration
+        require_rails_environment
+        raise "Konacha not loaded" unless defined? ::Konacha
+
+        # Custom formatter to handle multiple runs
+        @formatter = Formatter.new
+        ::Konacha.config.formatters = [@formatter]
+
+        # Reusable session to increase performance
+        @session = Capybara::Session.new(::Konacha.driver, Server.new)
+
+        ::Konacha.mode = :runner
+
         UI.info "Guard::Konacha Initialized"
       end
 
-      def launch_konacha(action)
-        UI.info "#{action}ing Konacha", :reset => true
-        spawn_konacha
+      def start
+        run if options[:run_all_on_start]
       end
 
-      def kill_konacha
-        clear_session!
-        if @process
-          @process.stop(5)
-          UI.info "Konacha Stopped", :reset => true
-        end
-      end
+      def run(paths = [''])
+        formatter.reset
 
-      def run(paths=[])
-        return UI.info("Konacha server not running") unless konacha_running?
-
-        UI.info "Konacha Running: #{paths.empty? ? 'All tests' : paths.join(' ')}"
-
-        urls = paths.map { |p| konacha_url(p) }
-        urls = [konacha_url] if paths.empty?
-
-        test_results = {
-          :examples => 0,
-          :failures => 0,
-          :pending  => 0,
-          :duration => 0
-        }
-
-        urls.each_with_index do |url, index|
-          individual_result = run_tests(url, paths[index])
-
-          test_results[:examples] += individual_result[:examples]
-          test_results[:failures] += individual_result[:failures]
-          test_results[:pending]  += individual_result[:pending]
-          test_results[:duration] += individual_result[:duration]
+        paths.each do |path|
+          runner.run konacha_path(path)
         end
 
-        result_line = "#{test_results[:examples]} examples, #{test_results[:failures]} failures"
-        result_line << ", #{test_results[:pending]} pending" if test_results[:pending] > 0
-        text = [
-          result_line,
-          "in #{"%.2f" % test_results[:duration]} seconds"
-        ].join "\n"
-
-        UI.info text if urls.length > 1
-
-        if @options[:notification]
-          image = test_results[:failures] > 0 ? :failed : :success
-          ::Guard::Notifier.notify(text, :title => 'Konacha Specs', :image => image )
-        end
-      end
-
-      EMPTY_RESULT = {
-        :examples => 0,
-        :failures => 0,
-        :pending  => 0,
-        :duration => 0,
-      }
-
-      def run_tests(url, path)
-        session.reset!
-        unless valid_spec? url
-          UI.warning "No spec found for: #{path}"
-          return EMPTY_RESULT
-        end
-
-        runner = ::Konacha::Runner.new session
-        runner.run url
-        return {
-          :examples => runner.reporter.example_count,
-          :failures => runner.reporter.failure_count,
-          :pending  => runner.reporter.pending_count,
-          :duration => runner.reporter.duration
-        }
+        formatter.write_summary
+        notify
       rescue => e
-        UI.error e.inspect
-        @session = nil
+        UI.error(e)
       end
 
-      def run_all
-        run if @options[:run_all]
-      end
-
-      def run_all_on_start
-         run_all if @options[:all_on_start]
-      end
 
       private
 
-      def konacha_url(path = nil)
-        url_path = path.gsub(/^#{@options[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '') unless path.nil?
-        "#{konacha_base_url}/#{url_path}?mode=runner&unique=#{unique_id}"
+
+      def require_rails_environment
+        if @options[:rails_environment_file]
+          require @options[:rails_environment_file]
+        else
+          dir = '.'
+          while File.expand_path(dir) != '/' do
+            env_file = File.join(dir, 'config/environment.rb')
+            if File.exist?(env_file)
+              require File.expand_path(env_file)
+              break
+            end
+            dir = File.join(dir, '..')
+          end
+        end
+      end
+
+      def runner
+        ::Konacha::Runner.new(@session)
+      end
+
+      def konacha_path(path)
+        '/' + path.gsub(/^#{::Konacha.config[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '')
       end
 
       def unique_id
         "#{Time.now.to_i}#{rand(100)}"
       end
 
-      def session
-        UI.info "Starting Konacha-Capybara session using #{@options[:driver]} driver, this can take a few seconds..." if @session.nil?
-        @session ||= Capybara::Session.new @options[:driver]
-      end
-
-      def clear_session!
-        return unless @session
-        @session.reset!
-        @session = nil
-      end
-
-      def spawn_konacha_command
-        cmd_parts = ''
-        cmd_parts << "bundle exec " if bundler?
-        cmd_parts << "rake konacha:serve"
-        cmd_parts.split
-      end
-
-      def spawn_konacha
-        unless @process
-          @process = ChildProcess.build(*spawn_konacha_command)
-          @process.io.inherit! if ::Guard.respond_to?(:options) && ::Guard.options && ::Guard.options[:verbose]
-          @process.start
-
-           Timeout::timeout(@options[:spawn_wait]) do
-            until konacha_running?
-              sleep(0.2)
-            end
-          end
+      def notify
+        if options[:notification]
+          image = @formatter.success? ? :success : :failed
+          ::Guard::Notifier.notify(@formatter.summary_line, :title => "Konacha Specs", :image => image)
         end
-      end
-
-      def konacha_base_url
-        "http://#{@options[:host]}:#{@options[:port]}"
-      end
-
-      def konacha_running?
-        Net::HTTP.get_response(URI.parse(konacha_base_url))
-      rescue Errno::ECONNREFUSED
-      end
-
-      def bundler?
-        @bundler ||= options[:bundler] != false && File.exist?("#{Dir.pwd}/Gemfile")
-      end
-
-      def valid_spec? url
-        session.visit url
-        konacha_spec = session.evaluate_script('typeof window.top.Konacha')
-        konacha_spec == 'object'
       end
 
     end
