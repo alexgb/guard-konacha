@@ -1,55 +1,35 @@
-# Guard::Konacha [![Build Status](https://travis-ci.org/alexgb/guard-konacha.png)](https://travis-ci.org/alexgb/guard-konacha)
+# Guard::Konacha [![Build Status](https://travis-ci.org/alexgb/guard-konacha.png?branch=master)](https://travis-ci.org/alexgb/guard-konacha)
 
 Automatically run your [Konacha](https://github.com/jfirebaugh/konacha) tests through [Guard](https://github.com/guard/guard/).
 
 ## Install
 
-Install the gem:
+If you haven't already, start by installing and configuring [Konacha](https://github.com/jfirebaugh/konacha). Then add the `guard-konacha` gem to your Gemfile:
 
-    $ gem install guard-konacha
-
-Or add to your Gemfile:
-
+    # Gemfile
     gem 'guard-konacha'
 
-## Usage
+And install
 
-Add guard definitions to your `Guardfile`
+    $ bundle install
 
-    guard :konacha do
-      watch(%r{^app/assets/javascripts/(.*)\.js(\.coffee)?$}) { |m| "#{m[1]}_spec.js" }
-      watch(%r{^spec/javascripts/.+_spec(\.js|\.js\.coffee)$})
-    end
+## Setup
 
-## Configuration
+Add the default configurations to your Guardfile.
 
-If your specs live outside of `spec/javascripts` then tell Konacha where to find them.
+    $ bundle exec guard init konacha
 
-    guard :konacha, :spec_dir => 'spec/front-end' do
-      # ...
-    end
+## Run
 
-If you want to use [capybara-webkit](https://github.com/thoughtbot/capybara-webkit) instead of the default selenium
-driver:
+And that's it. Your Konacha powered JavaScript tests will now run whenever your JavaScript assets or spec files change.
 
-    require 'capybara-webkit'
-    guard :konacha, :driver => :webkit do
-      # ...
-    end
+    $ bundle exec guard
 
-Or use [Poltergeist](https://github.com/jonleighton/poltergeist):
+## Additionally
 
-    require 'capybara/poltergeist'
-    guard :konacha, :driver => :poltergeist do
-      # ...
-    end
+I recommend using the [capybara-webkit](https://github.com/thoughtbot/capybara-webkit) or [poltergeist](https://github.com/jonleighton/poltergeist) drivers rather than the default selenium based driver. See [Konacha instructions](https://github.com/jfirebaugh/konacha#configuration). 
 
-If you are running konacha:serve on a different host or port than the
-default `localhost` and `3500`, the configuration settings `:host` and `:port` will help you there.
-
-## Development
-
-This is a work in progress and could use some help.
+To get system notifications see [Guard instructions](https://github.com/guard/guard/wiki/System-notifications).
 
 ## Contributors
 
