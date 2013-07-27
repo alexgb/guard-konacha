@@ -19,18 +19,6 @@ module Guard
         failed_examples.empty?
       end
 
-      def failed_examples
-        @examples.select(&:failed?).select(&:exception)
-      end
-
-      def pending_examples
-        @examples.select(&:pending?)
-      end
-
-      def summary_line
-        "#{examples.size} examples, #{failed_examples.size} failed, #{pending_examples.size} pending"
-      end
-
       def write_summary
         io.puts ""
         io.puts [
@@ -39,6 +27,22 @@ module Guard
         ].reject(&:empty?).join("\n\n")
         io.puts ""
         io.puts summary_line
+      end
+
+      def summary_line
+        "#{examples.size} examples, #{failed_examples.size} failed, #{pending_examples.size} pending"
+      end
+
+
+      private
+
+
+      def failed_examples
+        @examples.select(&:failed?).select(&:exception)
+      end
+
+      def pending_examples
+        @examples.select(&:pending?)
       end
 
       def failed_examples_message

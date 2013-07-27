@@ -25,7 +25,7 @@ describe Guard::Konacha do
 
   describe '.run_all' do
     it "calls Runner.run" do
-      subject.runner.should_receive(:run).with(no_args())
+      subject.runner.should_receive(:run).with(no_args)
       subject.run_all
     end
   end

@@ -1,5 +1,7 @@
 require 'guard'
 require 'guard/guard'
+require 'rails'
+require 'konacha'
 
 module Guard
   class Konacha < Guard

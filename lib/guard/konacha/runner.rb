@@ -8,12 +8,13 @@ module Guard
         :rails_environment_file => './config/environment'
       }
 
-      attr_reader :options
+      attr_reader :options, :formatter
 
       def initialize(options={})
         @options = DEFAULT_OPTIONS.merge(options)
 
-        # Must require user's rails environment prior to requiring Konacha
+        # Require project's rails environment file to load Konacha 
+        # configuration
         require_rails_environment
         raise "Konacha not loaded" unless defined? ::Konacha
 
@@ -34,13 +35,13 @@ module Guard
       end
 
       def run(paths = [''])
-        @formatter.reset
+        formatter.reset
 
         paths.each do |path|
           runner.run konacha_path(path)
         end
 
-        @formatter.write_summary
+        formatter.write_summary
         notify
       rescue => e
         UI.error(e)
