@@ -11,6 +11,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/alexgb/guard-konacha'
   s.summary     = 'Guard plugin for Konacha'
   s.description = 'Automatically run konacha tests'
+  s.license     = 'MIT'
 
   s.add_dependency 'guard',   '~> 1.1'
   s.add_dependency 'konacha', '>= 3.0'
