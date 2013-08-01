@@ -2,5 +2,4 @@ source 'http://rubygems.org'
 
 gemspec
 
-gem 'konacha'
-gem 'rb-readline'
+gem "rails", "~> #{ENV["RAILS_VERSION"] || '4.0'}"
