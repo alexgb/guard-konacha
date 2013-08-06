@@ -1,7 +1,7 @@
 ### Guard::Konacha
 #  available options:
-#  - :run_all_on_start, defaults to :true
-#  - :notification, defaults to :true
+#  - :run_all_on_start, defaults to true
+#  - :notification, defaults to true
 #  - :rails_environment_file, location of rails environment file,
 #    should be able to find it automatically
 guard :konacha do

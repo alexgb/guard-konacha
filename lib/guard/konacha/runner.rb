@@ -3,7 +3,7 @@ module Guard
     class Runner
 
       DEFAULT_OPTIONS = {
-        :run_all_on_start => :true,
+        :run_all_on_start => true,
         :notification => true,
         :rails_environment_file => './config/environment'
       }
