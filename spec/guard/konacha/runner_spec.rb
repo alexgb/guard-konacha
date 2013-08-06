@@ -22,10 +22,20 @@ describe Guard::Konacha::Runner do
   end
 
   describe '#start' do
-    let(:runner_options) { super().merge(:run_all_on_start => true) }
-    it 'should run all if :run_all_on_start option set to true' do
-      runner.should_receive(:run).with(no_args)
-      runner.start
+    describe 'with run_all_on_start set to true' do
+      let(:runner_options) { super().merge(:run_all_on_start => true) }
+      it 'should run all if :run_all_on_start option set to true' do
+        runner.should_receive(:run).with(no_args)
+        runner.start
+      end
+    end
+
+    describe 'with run_all_on_start set to false' do
+      let(:runner_options) { super().merge(:run_all_on_start => false) }
+      it 'should run all if :run_all_on_start option set to true' do
+        runner.should_not_receive(:run)
+        runner.start
+      end
     end
   end
 
