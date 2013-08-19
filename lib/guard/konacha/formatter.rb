@@ -1,3 +1,4 @@
+# -*- encoding : utf-8 -*-
 module Guard
   class Konacha
     class Formatter < ::Konacha::Formatter
