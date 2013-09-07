@@ -38,13 +38,12 @@ module Guard
         formatter.reset
 
         paths.each do |path|
-          file_path = konacha_path(path)
-          if File.exist?(file_path)
-            runner.run file_path
+          if File.exists? real_path path
+            runner.run konacha_path(path)
           end
         end
 
-        if formatter.examples.any?
+        if formatter.any?
           formatter.write_summary
           notify
         end
@@ -78,6 +77,10 @@ module Guard
 
       def konacha_path(path)
         '/' + path.gsub(/^#{::Konacha.config[:spec_dir]}\/?/, '').gsub(/\.coffee$/, '').gsub(/\.js$/, '')
+      end
+
+      def real_path(path)
+        ::Konacha.config[:spec_dir] + konacha_path(path) + path[/\.js(\.coffee)?$/]
       end
 
       def unique_id

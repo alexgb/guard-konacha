@@ -46,7 +46,8 @@ describe Guard::Konacha::Runner do
     before do
       runner.stub(:runner) { konacha_runner }
       runner.stub(:formatter) { konacha_formatter }
-      File.stub(:exist?) { true }
+      File.stub(:exists?) { true }
+      konacha_formatter.stub(:any?) { true }
     end
 
     it 'should run each path through runner and format results' do

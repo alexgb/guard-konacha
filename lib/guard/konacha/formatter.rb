@@ -20,6 +20,10 @@ module Guard
         failed_examples.empty?
       end
 
+      def any?
+        @examples.any?
+      end
+
       def write_summary
         io.puts ""
         io.puts [
