@@ -13,7 +13,7 @@ module Guard
       def initialize(options={})
         @options = DEFAULT_OPTIONS.merge(options)
 
-        # Require project's rails environment file to load Konacha 
+        # Require project's rails environment file to load Konacha
         # configuration
         require_rails_environment
         raise "Konacha not loaded" unless defined? ::Konacha
@@ -38,7 +38,10 @@ module Guard
         formatter.reset
 
         paths.each do |path|
-          runner.run konacha_path(path)
+          file_path = konacha_path(path)
+          if File.exist?(file_path)
+            runner.run file_path
+          end
         end
 
         formatter.write_summary
