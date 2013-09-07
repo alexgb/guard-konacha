@@ -38,7 +38,7 @@ module Guard
         formatter.reset
 
         paths.each do |path|
-          if File.exists? real_path path
+          if path.empty? or File.exists? real_path path
             runner.run konacha_path(path)
           end
         end

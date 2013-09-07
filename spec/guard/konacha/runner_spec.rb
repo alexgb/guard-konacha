@@ -45,17 +45,22 @@ describe Guard::Konacha::Runner do
 
     before do
       runner.stub(:runner) { konacha_runner }
-      runner.stub(:formatter) { konacha_formatter }
       File.stub(:exists?) { true }
       konacha_formatter.stub(:any?) { true }
     end
 
     it 'should run each path through runner and format results' do
+      runner.stub(:formatter) { konacha_formatter }
       konacha_formatter.should_receive(:reset)
       konacha_runner.should_receive(:run).with('/1')
       konacha_runner.should_receive(:run).with('/foo/bar')
       konacha_formatter.should_receive(:write_summary)
       runner.run(['spec/javascripts/1.js', 'spec/javascripts/foo/bar.js'])
+    end
+
+    it 'should run when called with no arguemnts' do
+      konacha_runner.should_receive(:run)
+      runner.run
     end
   end
 
