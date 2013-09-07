@@ -80,7 +80,7 @@ module Guard
       end
 
       def real_path(path)
-        ::Konacha.config[:spec_dir] + konacha_path(path) + path[/\.js(\.coffee)?$/]
+        ::Konacha.config[:spec_dir] + konacha_path(path) + (path[/\.js(\.coffee)?$/] || '')
       end
 
       def unique_id
