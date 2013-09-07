@@ -36,16 +36,20 @@ module Guard
 
       def run(paths = [''])
         formatter.reset
+        ran_one = false
 
         paths.each do |path|
           file_path = konacha_path(path)
           if File.exist?(file_path)
             runner.run file_path
+            ran_one = true
           end
         end
 
-        formatter.write_summary
-        notify
+        if ran_one
+          formatter.write_summary
+          notify
+        end
       rescue => e
         UI.error(e)
       end
