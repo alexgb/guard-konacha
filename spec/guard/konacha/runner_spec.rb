@@ -59,6 +59,9 @@ describe Guard::Konacha::Runner do
     end
 
     it 'should run when called with no arguemnts' do
+      runner.stub(:formatter) { konacha_formatter }
+      konacha_formatter.should_receive(:write_summary)
+      konacha_formatter.should_receive(:reset)
       konacha_runner.should_receive(:run)
       runner.run
     end
