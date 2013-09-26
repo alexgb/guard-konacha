@@ -20,7 +20,14 @@ module Guard
         failed_examples.empty?
       end
 
+      def any?
+        @examples.any?
+      end
+
       def write_summary
+        #don't write a summary if no tests have been run
+        return if not any?
+
         io.puts ""
         io.puts [
           failed_examples_message,
