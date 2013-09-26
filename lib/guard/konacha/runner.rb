@@ -43,10 +43,8 @@ module Guard
           end
         end
 
-        if formatter.any?
-          formatter.write_summary
-          notify
-        end
+        formatter.write_summary
+        notify
       rescue => e
         UI.error(e)
       end
