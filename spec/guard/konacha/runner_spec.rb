@@ -45,17 +45,25 @@ describe Guard::Konacha::Runner do
 
     before do
       runner.stub(:runner) { konacha_runner }
-      File.stub(:exists?) { true }
       konacha_formatter.stub(:any?) { true }
     end
 
     it 'should run each path through runner and format results' do
+      File.stub(:exists?) { true }
       runner.stub(:formatter) { konacha_formatter }
       konacha_formatter.should_receive(:reset)
       konacha_runner.should_receive(:run).with('/1')
       konacha_runner.should_receive(:run).with('/foo/bar')
       konacha_formatter.should_receive(:write_summary)
       runner.run(['spec/javascripts/1.js', 'spec/javascripts/foo/bar.js'])
+    end
+
+    it 'should run each path with a valid extension' do
+      File.should_receive(:exists?).with(Rails.root.join('spec/javascripts/1.js').to_s).and_return(true)
+      File.should_receive(:exists?).with(Rails.root.join('spec/javascripts/foo/bar.js.coffee').to_s).and_return(true)
+      konacha_runner.should_receive(:run).with('/1')
+      konacha_runner.should_receive(:run).with('/foo/bar')
+      runner.run(['spec/javascripts/1.js', 'spec/javascripts/foo/bar.js.coffee'])
     end
 
     it 'should run when called with no arguemnts' do
