@@ -78,7 +78,7 @@ module Guard
       end
 
       def real_path(path)
-        Rails.root.join(::Konacha.config[:spec_dir] + konacha_path(path) + (path[/\.js(\.coffee)?$/] || '')).to_s
+        ::Rails.root.join(::Konacha.config[:spec_dir] + konacha_path(path) + (path[/\.js(\.coffee)?$/] || '')).to_s
       end
 
       def unique_id
