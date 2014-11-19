@@ -1,10 +1,10 @@
 require 'guard'
-require 'guard/guard'
+require 'guard/plugin'
 require 'rails'
 require 'konacha'
 
 module Guard
-  class Konacha < Guard
+  class Konacha < Plugin
 
     autoload :Runner, 'guard/konacha/runner'
     autoload :Formatter, 'guard/konacha/formatter'
