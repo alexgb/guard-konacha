@@ -51,7 +51,7 @@ describe Guard::Konacha::Formatter do
       })
     end
 
-    let(:io) { double("IO") }
+    let(:io) { double("IO", :tty? => true) }
 
     before do
       formatter.stub(:io) { io }

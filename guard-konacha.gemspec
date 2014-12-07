@@ -13,10 +13,11 @@ Gem::Specification.new do |s|
   s.description = 'Automatically run konacha tests'
   s.license     = 'MIT'
 
-  s.add_dependency 'guard',   '>= 1.1'
+  s.add_dependency 'guard',   '>= 2.0'
+  s.add_dependency('guard-compat', '~> 0.3')
   s.add_dependency 'konacha', '>= 3.0'
 
-  s.add_development_dependency 'rspec', '>= 2.13'
+  s.add_development_dependency 'rspec', '~> 2.13'
   s.add_development_dependency 'timecop'
   s.add_development_dependency 'simplecov'
   s.add_development_dependency 'poltergeist'
