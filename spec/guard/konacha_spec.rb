@@ -30,13 +30,6 @@ describe Guard::Konacha do
     end
   end
 
-    describe '.run_on_change (for guard 1.0.x and earlier)' do
-    it 'calls Runner.run with file name' do
-      expect(subject.runner).to receive(:run).with(['file_name.js'])
-      subject.run_on_change(['file_name.js'])
-    end
-  end
-
   describe '.run_on_changes' do
     it "calls Runner.run with file name" do
       expect(subject.runner).to receive(:run).with(['file_name.js'])

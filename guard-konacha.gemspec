@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'guard',   '>= 2'
   s.add_dependency 'konacha', '>= 3.0'
+  s.add_dependency 'guard-compat'
 
   s.add_development_dependency 'rspec', '>= 3'
   s.add_development_dependency 'timecop'
