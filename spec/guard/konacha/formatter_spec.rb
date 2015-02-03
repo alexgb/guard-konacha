@@ -5,14 +5,14 @@ describe Guard::Konacha::Formatter do
   let(:formatter) { Guard::Konacha::Formatter.new }
 
   it 'should respond not implemented base class methods' do
-    formatter.should respond_to(:dump_summary).with(4).arguments
-    formatter.should respond_to(:dump_failures)
-    formatter.should respond_to(:dump_pending)
+    expect(formatter).to respond_to(:dump_summary).with(4).arguments
+    expect(formatter).to respond_to(:dump_failures)
+    expect(formatter).to respond_to(:dump_pending)
   end
 
   describe('#reset') do
     it 'should respond to reset' do
-      formatter.should respond_to(:reset)
+      expect(formatter).to respond_to(:reset)
     end
   end
 
@@ -51,18 +51,18 @@ describe Guard::Konacha::Formatter do
       })
     end
 
-    let(:io) { double("IO") }
+    let(:io) { double("IO", :tty? => true) }
 
     before do
-      formatter.stub(:io) { io }
+      allow(formatter).to receive(:io) { io }
     end
 
     it 'should examples to output' do
-      io.should_receive(:write).with("F".red).ordered
-      io.should_receive(:write).with(".".green).ordered
-      io.should_receive(:write).with("P".yellow).ordered
+      expect(io).to receive(:write).with("F".red).ordered
+      expect(io).to receive(:write).with(".".green).ordered
+      expect(io).to receive(:write).with("P".yellow).ordered
 
-      io.should_receive(:puts).with(any_args).at_least(:once)
+      expect(io).to receive(:puts).with(any_args).at_least(:once)
 
       formatter.example_failed(failure)
       formatter.example_passed(success)
