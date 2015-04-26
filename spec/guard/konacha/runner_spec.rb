@@ -9,6 +9,7 @@ describe Guard::Konacha::Runner do
   before do
     # Silence Ui.info output
     ::Guard::UI.stub :info => true
+    ::Guard::Notifier.stub :notify => true
   end
 
   describe '#initialize' do

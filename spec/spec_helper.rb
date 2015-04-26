@@ -9,6 +9,7 @@ end
 
 require 'rspec'
 require 'timecop'
+require 'guard/compat/test/helper'
 require 'guard/konacha'
 
 ENV["GUARD_ENV"] = 'test'

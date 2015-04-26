@@ -1,10 +1,9 @@
-require 'guard'
-require 'guard/guard'
+require 'guard/compat/plugin'
 require 'rails'
 require 'konacha'
 
 module Guard
-  class Konacha < Guard
+  class Konacha < Plugin
 
     autoload :Runner, 'guard/konacha/runner'
     autoload :Formatter, 'guard/konacha/formatter'
@@ -12,7 +11,7 @@ module Guard
 
     attr_accessor :runner
 
-    def initialize(watchers=[], options={})
+    def initialize(options = {})
       super
       @runner = Runner.new(options)
     end
